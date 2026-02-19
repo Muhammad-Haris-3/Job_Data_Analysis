@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# =========================
+# BACKEND (Python / Flask)
+# =========================
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# =========================
+# DATASETS & LARGE FILES
+# =========================
+*.csv
+*.parquet
+*.xlsx
