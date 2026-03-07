@@ -17,55 +17,7 @@ import {
   Bar,
 } from "recharts";
 
-// ── Dummy Data ──────────────────────────────────────────────
-const SUMMARY = [
-  { label: "TOTAL POSTINGS", value: "24.5k", change: "+12%", colorKey: "CYAN" },
-  {
-    label: "AVG SALARY",
-    value: "$142k",
-    change: "+5%",
-    colorKey: "ACCENT_GREEN",
-  },
-  {
-    label: "COMPANIES",
-    value: "1.2k",
-    change: "+2%",
-    colorKey: "ACCENT_PURPLE",
-  },
-  {
-    label: "GROWTH",
-    value: "8.4%",
-    change: "+1.5%",
-    colorKey: "ACCENT_YELLOW",
-  },
-];
-
-const TOP_ROLES = [
-  { title: "Data Scientist", pct: 92 },
-  { title: "ML Engineer", pct: 85 },
-  { title: "Data Analyst", pct: 78 },
-  { title: "AI Researcher", pct: 64 },
-  { title: "Data Engineer", pct: 57 },
-];
-
-const SALARY_TREND = [
-  { month: "JAN", avg: 95, max: 160, min: 70 },
-  { month: "FEB", avg: 98, max: 168, min: 72 },
-  { month: "MAR", avg: 94, max: 162, min: 68 },
-  { month: "APR", avg: 105, max: 178, min: 75 },
-  { month: "MAY", avg: 118, max: 195, min: 82 },
-  { month: "JUN", avg: 130, max: 210, min: 85 },
-];
-
-const TOP_SKILLS = [
-  { name: "Python", value: 84 },
-  { name: "SQL", value: 72 },
-  { name: "AWS", value: 64 },
-  { name: "PyTorch", value: 58 },
-  { name: "Docker", value: 51 },
-];
-
-const pct = (v) => `${v}%`;
+const API = "http://localhost:5000";
 
 // ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
@@ -80,8 +32,21 @@ function useHover() {
 // ── Custom Tooltip ───────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   const { theme } = useTheme();
-  const { BORDER, TEXT, MUTED, TOOLTIP_BG } = theme;
+  const { BORDER, TEXT, MUTED, TOOLTIP_BG, CYAN, ACCENT_GREEN, ACCENT_YELLOW } =
+    theme;
   if (!active || !payload?.length) return null;
+
+  const values = payload.reduce((acc, p) => {
+    if (p?.dataKey) acc[p.dataKey] = p.value;
+    return acc;
+  }, {});
+
+  const rows = [
+    { key: "avg", label: "Avg", color: CYAN },
+    { key: "max", label: "Max", color: ACCENT_GREEN },
+    { key: "min", label: "Min", color: ACCENT_YELLOW },
+  ].filter((row) => values[row.key] !== undefined && values[row.key] !== null);
+
   return (
     <div
       style={{
@@ -94,20 +59,58 @@ const CustomTooltip = ({ active, payload, label }) => {
       }}
     >
       <div style={{ color: MUTED, marginBottom: 4 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color }}>
-          {p.name}: <strong>${p.value}k</strong>
+      {rows.map((row) => (
+        <div key={row.key} style={{ color: row.color }}>
+          {row.label}: <strong>${values[row.key]}k</strong>
         </div>
       ))}
     </div>
   );
 };
 
-// ── Summary Card (individual with hover) ────────────────────
+// ── Loading Skeleton ─────────────────────────────────────────
+function Skeleton({ width = "100%", height = 32, style = {} }) {
+  const { theme } = useTheme();
+  return (
+    <div
+      style={{
+        width,
+        height,
+        background: `linear-gradient(90deg, ${theme.BORDER} 25%, ${theme.CARD_HOVER} 50%, ${theme.BORDER} 75%)`,
+        backgroundSize: "200% 100%",
+        borderRadius: 6,
+        animation: "shimmer 1.5s infinite",
+        ...style,
+      }}
+    />
+  );
+}
+
+// ── Error Banner ─────────────────────────────────────────────
+function ErrorBanner({ message }) {
+  const { theme } = useTheme();
+  return (
+    <div
+      style={{
+        margin: "12px 32px",
+        padding: "12px 16px",
+        background: `${theme.RED}15`,
+        border: `1px solid ${theme.RED}44`,
+        borderRadius: 10,
+        color: theme.RED,
+        fontSize: 13,
+        fontFamily: "monospace",
+      }}
+    >
+      ⚠ API Error: {message} — make sure Flask is running on localhost:5000
+    </div>
+  );
+}
+
+// ── Summary Card (single) ────────────────────────────────────
 function SummaryCard({ s, isMobile }) {
   const { theme } = useTheme();
   const { CARD, BORDER, MUTED, TEXT, CARD_HOVER } = theme;
-  const color = theme[s.colorKey];
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   return (
     <div
@@ -115,13 +118,13 @@ function SummaryCard({ s, isMobile }) {
       onMouseLeave={onMouseLeave}
       style={{
         background: hovered ? CARD_HOVER : CARD,
-        border: `1px solid ${hovered ? color + "66" : BORDER}`,
+        border: `1px solid ${hovered ? s.colorKey + "66" : BORDER}`,
         borderRadius: isMobile ? 12 : 14,
         padding: isMobile ? "12px 14px" : "20px 22px",
         cursor: "default",
         transition:
           "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
-        boxShadow: hovered ? `0 0 16px ${color}0f` : "none",
+        boxShadow: hovered ? `0 0 16px ${s.colorKey}0f` : "none",
       }}
     >
       <div
@@ -148,7 +151,7 @@ function SummaryCard({ s, isMobile }) {
         <span
           style={{
             fontSize: isMobile ? 11 : 13,
-            color: color,
+            color: s.colorKey,
             fontWeight: 600,
           }}
         >
@@ -160,7 +163,7 @@ function SummaryCard({ s, isMobile }) {
           marginTop: 8,
           height: 3,
           borderRadius: 2,
-          background: `linear-gradient(90deg, ${color}55, ${color})`,
+          background: `linear-gradient(90deg, ${s.colorKey}55, ${s.colorKey})`,
           transform: hovered ? "scaleX(1.03)" : "scaleX(1)",
           transition: "transform 0.2s ease",
           transformOrigin: "left",
@@ -170,8 +173,50 @@ function SummaryCard({ s, isMobile }) {
   );
 }
 
-// ── Summary Cards Grid ───────────────────────────────────────
-function SummaryCards({ isMobile }) {
+// ── Summary Cards ────────────────────────────────────────────
+function SummaryCards({ data, loading, isMobile }) {
+  const { theme } = useTheme();
+  const {
+    CARD,
+    BORDER,
+    MUTED,
+    TEXT,
+    CARD_HOVER,
+    CYAN,
+    ACCENT_GREEN,
+    ACCENT_PURPLE,
+    ACCENT_YELLOW,
+  } = theme;
+
+  const cards = data
+    ? [
+        {
+          label: "TOTAL POSTINGS",
+          value: `${(data.summary_stats.total_jobs / 1000).toFixed(1)}k`,
+          change: data.summary_stats.market_growth,
+          colorKey: CYAN,
+        },
+        {
+          label: "AVG SALARY",
+          value: `$${(data.summary_stats.avg_salary / 1000).toFixed(0)}k`,
+          change: "+real data",
+          colorKey: ACCENT_GREEN,
+        },
+        {
+          label: "COMPANIES",
+          value: `${(data.summary_stats.active_companies / 1000).toFixed(1)}k`,
+          change: "+active",
+          colorKey: ACCENT_PURPLE,
+        },
+        {
+          label: "MARKET GROWTH",
+          value: data.summary_stats.market_growth,
+          change: "YoY",
+          colorKey: ACCENT_YELLOW,
+        },
+      ]
+    : [];
+
   return (
     <div
       style={{
@@ -181,14 +226,36 @@ function SummaryCards({ isMobile }) {
         padding: isMobile ? "14px 14px 0" : "24px 32px 0",
       }}
     >
-      {SUMMARY.map((s) => (
-        <SummaryCard key={s.label} s={s} isMobile={isMobile} />
-      ))}
+      {loading
+        ? Array(4)
+            .fill(0)
+            .map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  background: CARD,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 14,
+                  padding: "20px 22px",
+                }}
+              >
+                <Skeleton
+                  height={10}
+                  width="60%"
+                  style={{ marginBottom: 12 }}
+                />
+                <Skeleton height={32} width="80%" style={{ marginBottom: 8 }} />
+                <Skeleton height={10} width="40%" />
+              </div>
+            ))
+        : cards.map((s) => (
+            <SummaryCard key={s.label} s={s} isMobile={isMobile} />
+          ))}
     </div>
   );
 }
 
-// ── Top Roles ────────────────────────────────────────────────
+// ── Role Row (single) ────────────────────────────────────────
 function RoleRow({ r, isMobile }) {
   const { theme } = useTheme();
   const { CYAN, TEXT, BORDER, SECONDARY_TEXT } = theme;
@@ -224,7 +291,7 @@ function RoleRow({ r, isMobile }) {
         <span
           style={{ fontSize: isMobile ? 11 : 12, color: CYAN, fontWeight: 600 }}
         >
-          {r.pct}% Match
+          {r.count.toLocaleString()} jobs
         </span>
       </div>
       <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
@@ -232,10 +299,10 @@ function RoleRow({ r, isMobile }) {
           style={{
             height: "100%",
             borderRadius: 2,
-            width: pct(r.pct),
+            width: `${r.pct}%`,
             background: `linear-gradient(90deg, ${CYAN}88, ${CYAN})`,
-            transition: "opacity 0.2s ease",
             opacity: hovered ? 1 : 0.7,
+            transition: "opacity 0.2s ease",
           }}
         />
       </div>
@@ -243,9 +310,19 @@ function RoleRow({ r, isMobile }) {
   );
 }
 
-function TopRoles({ isMobile }) {
+// ── Top Roles ────────────────────────────────────────────────
+function TopRoles({ data, loading, isMobile }) {
   const { theme } = useTheme();
   const { CARD, BORDER, CYAN, TEXT } = theme;
+
+  const roles = data
+    ? data.top_titles.slice(0, 6).map((t) => ({
+        title: t.title,
+        pct: Math.round((t.count / data.top_titles[0].count) * 100),
+        count: t.count,
+      }))
+    : [];
+
   return (
     <div
       style={{
@@ -277,24 +354,115 @@ function TopRoles({ isMobile }) {
         >
           TOP JOB TITLES
         </span>
+        {data && (
+          <span
+            style={{
+              fontSize: 10,
+              color: theme.MUTED,
+              marginLeft: "auto",
+              fontFamily: "monospace",
+            }}
+          >
+            REAL DATA · {data.meta.total_rows_processed.toLocaleString()}{" "}
+            POSTINGS
+          </span>
+        )}
+      </div>
+      {loading ? (
+        Array(5)
+          .fill(0)
+          .map((_, i) => (
+            <Skeleton key={i} height={44} style={{ marginBottom: 10 }} />
+          ))
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            gap: isMobile ? 0 : "0 32px",
+          }}
+        >
+          {roles.map((r) => (
+            <RoleRow key={r.title} r={r} isMobile={isMobile} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Range Button ─────────────────────────────────────────────
+function RangeButton({ r, range, setRange, isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, MUTED, BORDER } = theme;
+  const { hovered, onMouseEnter, onMouseLeave } = useHover();
+  const isActive = range === r;
+  return (
+    <button
+      onClick={() => setRange(r)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        padding: "3px 10px",
+        borderRadius: 6,
+        fontSize: isMobile ? 11 : 12,
+        fontWeight: 700,
+        border: `1px solid ${isActive ? CYAN : hovered ? CYAN + "88" : BORDER}`,
+        background: isActive
+          ? `${CYAN}22`
+          : hovered
+            ? `${CYAN}11`
+            : "transparent",
+        color: isActive ? CYAN : hovered ? CYAN + "cc" : MUTED,
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+      }}
+    >
+      {r}
+    </button>
+  );
+}
+
+// ── Stat Box ─────────────────────────────────────────────────
+function StatBox({ label, val, clr, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD_HOVER, SUBTLE_BG, BORDER, MUTED } = theme;
+  const { hovered, onMouseEnter, onMouseLeave } = useHover();
+  return (
+    <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        background: hovered ? CARD_HOVER : SUBTLE_BG,
+        borderRadius: 8,
+        padding: isMobile ? "8px 10px" : "12px 16px",
+        textAlign: "center",
+        border: `1px solid ${hovered ? clr + "55" : BORDER}`,
+        transition: "all 0.25s ease",
+        cursor: "default",
+      }}
+    >
+      <div
+        style={{ fontSize: isMobile ? 9 : 10, color: MUTED, letterSpacing: 1 }}
+      >
+        {label}
       </div>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-          gap: isMobile ? 0 : "0 32px",
+          fontSize: isMobile ? 18 : 24,
+          fontWeight: 800,
+          color: clr,
+          marginTop: 2,
         }}
       >
-        {TOP_ROLES.map((r) => (
-          <RoleRow key={r.title} r={r} isMobile={isMobile} />
-        ))}
+        {val}
       </div>
     </div>
   );
 }
 
 // ── Salary Trends ────────────────────────────────────────────
-function SalaryTrends({ range, setRange, isMobile }) {
+function SalaryTrends({ data, loading, range, setRange, isMobile }) {
   const { theme } = useTheme();
   const {
     CARD,
@@ -307,6 +475,26 @@ function SalaryTrends({ range, setRange, isMobile }) {
     ACCENT_GREEN,
     ACCENT_YELLOW,
   } = theme;
+
+  // Use real salary trends, filter by range
+  const rawTrends = data?.salary_trends || [];
+  const chartData =
+    range === "6M"
+      ? rawTrends.slice(-6) // 6 months
+      : rawTrends; // all data
+
+  // Convert raw salary to $k and format label
+  const formatted = chartData.map((d) => ({
+    ...d,
+    label: d.month.slice(0, 7),
+    avg: Math.round((d.avg ?? 0) / 1000),
+    max: Math.round((d.max ?? d.avg ?? 0) / 1000),
+    min: Math.round((d.min ?? d.avg ?? 0) / 1000),
+  }));
+
+  const maxSalary = data ? Math.max(...rawTrends.map((d) => d.max)) : 0;
+  const minSalary = data ? Math.min(...rawTrends.map((d) => d.min)) : 0;
+
   return (
     <div
       style={{
@@ -346,152 +534,128 @@ function SalaryTrends({ range, setRange, isMobile }) {
           </span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          {["1M", "1Y"].map((r) => {
-            const { hovered, onMouseEnter, onMouseLeave } = useHover();
-            return (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                onMouseEnter={onMouseEnter}
-                onMouseLeave={onMouseLeave}
-                style={{
-                  padding: "3px 10px",
-                  borderRadius: 6,
-                  fontSize: isMobile ? 11 : 12,
-                  fontWeight: 700,
-                  border: `1px solid ${range === r ? CYAN : hovered ? CYAN + "88" : BORDER}`,
-                  background:
-                    range === r
-                      ? `${CYAN}22`
-                      : hovered
-                        ? `${CYAN}11`
-                        : "transparent",
-                  color: range === r ? CYAN : hovered ? CYAN + "cc" : MUTED,
-                  cursor: "pointer",
-                  transition:
-                    "background 0.25s ease, border-color 0.25s ease, color 0.25s ease",
-                }}
-              >
-                {r}
-              </button>
-            );
-          })}
+          {["6M", "ALL"].map((r) => (
+            <RangeButton
+              key={r}
+              r={r}
+              range={range}
+              setRange={setRange}
+              isMobile={isMobile}
+            />
+          ))}
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
-        <AreaChart
-          data={SALARY_TREND}
-          margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
-        >
-          <defs>
-            <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={CYAN} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={CYAN} stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={ACCENT_GREEN} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={ACCENT_GREEN} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={BORDER}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="month"
-            tick={{ fill: MUTED, fontSize: isMobile ? 10 : 12 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: MUTED, fontSize: isMobile ? 10 : 12 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area
-            type="monotone"
-            dataKey="avg"
-            name="Avg"
-            stroke={CYAN}
-            strokeWidth={2}
-            fill="url(#cyanGrad)"
-            dot={false}
-          />
-          <Area
-            type="monotone"
-            dataKey="max"
-            name="Max"
-            stroke={ACCENT_GREEN}
-            strokeWidth={2}
-            strokeDasharray="4 3"
-            fill="url(#greenGrad)"
-            dot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      {loading ? (
+        <Skeleton height={220} />
+      ) : (
+        <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
+          <AreaChart
+            data={formatted}
+            margin={{ top: 4, right: 30, left: 20, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={CYAN} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={CYAN} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={ACCENT_GREEN} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={ACCENT_GREEN} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="yellowGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={ACCENT_YELLOW} stopOpacity={0.2} />
+                <stop offset="95%" stopColor={ACCENT_YELLOW} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={BORDER}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="label"
+              tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `$${v}k`}
+              domain={["auto", "auto"]}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="avg"
+              name="Avg"
+              stroke={CYAN}
+              strokeWidth={2}
+              fill="url(#cyanGrad)"
+              dot={false}
+            />
+            <Area
+              type="monotone"
+              dataKey="max"
+              name="Max"
+              stroke={ACCENT_GREEN}
+              strokeWidth={2}
+              strokeDasharray="4 3"
+              fill="url(#greenGrad)"
+              dot={false}
+            />
+            <Area
+              type="monotone"
+              dataKey="min"
+              name="Min"
+              stroke={ACCENT_YELLOW}
+              strokeWidth={2}
+              strokeDasharray="2 2"
+              fill="url(#yellowGrad)"
+              dot={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 8,
-          marginTop: 10,
-        }}
-      >
-        {[
-          ["MAX OFFER", "$210k", CYAN],
-          ["MIN OFFER", "$85k", ACCENT_YELLOW],
-        ].map(([lbl, val, clr]) => {
-          const { hovered, onMouseEnter, onMouseLeave } = useHover();
-          return (
-            <div
-              key={lbl}
-              onMouseEnter={onMouseEnter}
-              onMouseLeave={onMouseLeave}
-              style={{
-                background: hovered ? CARD_HOVER : SUBTLE_BG,
-                borderRadius: 8,
-                padding: isMobile ? "8px 10px" : "12px 16px",
-                textAlign: "center",
-                border: `1px solid ${hovered ? clr + "55" : BORDER}`,
-                transition: "background 0.25s ease, border-color 0.25s ease",
-                cursor: "default",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: isMobile ? 9 : 10,
-                  color: MUTED,
-                  letterSpacing: 1,
-                }}
-              >
-                {lbl}
-              </div>
-              <div
-                style={{
-                  fontSize: isMobile ? 18 : 24,
-                  fontWeight: 800,
-                  color: clr,
-                  marginTop: 2,
-                }}
-              >
-                {val}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {data && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+            marginTop: 10,
+          }}
+        >
+          <StatBox
+            label="MAX OFFER"
+            val={`$${(maxSalary / 1000).toFixed(0)}k`}
+            clr={CYAN}
+            isMobile={isMobile}
+          />
+          <StatBox
+            label="MIN OFFER"
+            val={`$${(minSalary / 1000).toFixed(0)}k`}
+            clr={ACCENT_YELLOW}
+            isMobile={isMobile}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Skills Bar ───────────────────────────────────────────────
-function SkillsBar({ isMobile }) {
+function SkillsBar({ data, loading, isMobile }) {
   const { theme } = useTheme();
   const { CARD, BORDER, CYAN, MUTED, TEXT, TOOLTIP_BG, ACCENT_PURPLE } = theme;
+
+  const skills = data
+    ? data.top_skills.slice(0, 8).map((s) => ({ name: s.skill, value: s.pct }))
+    : [];
+
   return (
     <div
       style={{
@@ -528,46 +692,64 @@ function SkillsBar({ isMobile }) {
         >
           TOP SKILLS IN DEMAND
         </span>
-      </div>
-      <ResponsiveContainer width="100%" height={isMobile ? 130 : 180}>
-        <BarChart
-          data={TOP_SKILLS}
-          layout="vertical"
-          margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
-        >
-          <XAxis
-            type="number"
-            domain={[0, 100]}
-            tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            type="category"
-            dataKey="name"
-            tick={{ fill: TEXT, fontSize: isMobile ? 11 : 13 }}
-            axisLine={false}
-            tickLine={false}
-            width={52}
-          />
-          <Tooltip
-            cursor={{ fill: `${CYAN}11` }}
-            contentStyle={{
-              background: TOOLTIP_BG,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 8,
-              fontSize: 11,
+        {data && (
+          <span
+            style={{
+              fontSize: 10,
+              color: MUTED,
+              marginLeft: "auto",
+              fontFamily: "monospace",
             }}
-          />
-          <Bar
-            dataKey="value"
-            fill={CYAN}
-            radius={[0, 4, 4, 0]}
-            barSize={isMobile ? 10 : 14}
-            name="Demand %"
-          />
-        </BarChart>
-      </ResponsiveContainer>
+          >
+            % OF JOB POSTINGS
+          </span>
+        )}
+      </div>
+      {loading ? (
+        <Skeleton height={180} />
+      ) : (
+        <ResponsiveContainer width="100%" height={isMobile ? 160 : 220}>
+          <BarChart
+            data={skills}
+            layout="vertical"
+            margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
+          >
+            <XAxis
+              type="number"
+              domain={[0, Math.ceil(skills[0]?.value || 100)]}
+              tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
+              axisLine={false}
+              tickLine={false}
+              unit="%"
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              tick={{ fill: TEXT, fontSize: isMobile ? 11 : 13 }}
+              axisLine={false}
+              tickLine={false}
+              width={60}
+            />
+            <Tooltip
+              cursor={{ fill: `${CYAN}11` }}
+              contentStyle={{
+                background: TOOLTIP_BG,
+                border: `1px solid ${BORDER}`,
+                borderRadius: 8,
+                fontSize: 11,
+              }}
+              formatter={(v) => [`${v}%`, "Demand"]}
+            />
+            <Bar
+              dataKey="value"
+              fill={CYAN}
+              radius={[0, 4, 4, 0]}
+              barSize={isMobile ? 10 : 14}
+              name="Demand %"
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }
@@ -580,7 +762,7 @@ function BottomNav({ active, setActive }) {
     { id: "DASH", icon: "⊞", label: "DASH" },
     { id: "MARKET", icon: "📈", label: "MARKET" },
     { id: "JOBS", icon: "💼", label: "JOBS" },
-    { id: "SETTINGS", icon: "⚙️", label: "SETTINGS" },
+    { id: "SETTINGS", icon: "⚙️", label: "DATA" },
   ];
   return (
     <div
@@ -641,7 +823,7 @@ function BottomNav({ active, setActive }) {
   );
 }
 
-// ── Nav Button (for top header) ──────────────────────────────
+// ── Nav Button ───────────────────────────────────────────────
 function NavButton({ item, isActive, onClick }) {
   const { theme } = useTheme();
   const { CYAN, TEXT, MUTED } = theme;
@@ -661,7 +843,7 @@ function NavButton({ item, isActive, onClick }) {
         alignItems: "center",
         gap: 6,
         borderRadius: "6px 6px 0 0",
-        transition: "background 0.25s ease, border-color 0.25s ease",
+        transition: "all 0.25s ease",
       }}
     >
       <span style={{ fontSize: 14 }}>{item.icon}</span>
@@ -681,15 +863,15 @@ function NavButton({ item, isActive, onClick }) {
 }
 
 // ── Header ───────────────────────────────────────────────────
-function Header({ time, isMobile, active, setActive }) {
+function Header({ time, isMobile, active, setActive, dataReady }) {
   const { dark, setDark, theme } = useTheme();
-  const { CYAN, TEXT, BORDER, MUTED } = theme;
+  const { CYAN, TEXT, BORDER, MUTED, ACCENT_GREEN } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const navItems = [
     { id: "DASH", icon: "⊞", label: "Dashboard" },
-    { id: "MARKET", icon: "📈", label: "Market" },
-    { id: "JOBS", icon: "💼", label: "Jobs" },
-    { id: "SETTINGS", icon: "⚙️", label: "Settings" },
+    { id: "MARKET", icon: "📈", label: "Skill Trends" },
+    { id: "JOBS", icon: "💼", label: "Salary Map" },
+    { id: "SETTINGS", icon: "🔬", label: "Analyze Data" },
   ];
   return (
     <div
@@ -725,6 +907,41 @@ function Header({ time, isMobile, active, setActive }) {
         >
           JOBMARKET<span style={{ color: TEXT }}>.AI</span>
         </span>
+        {/* Live data indicator */}
+        {dataReady && !isMobile && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              marginLeft: 8,
+              padding: "3px 10px",
+              borderRadius: 20,
+              background: `${ACCENT_GREEN}15`,
+              border: `1px solid ${ACCENT_GREEN}33`,
+            }}
+          >
+            <div
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: ACCENT_GREEN,
+                boxShadow: `0 0 6px ${ACCENT_GREEN}`,
+              }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                color: ACCENT_GREEN,
+                fontWeight: 700,
+                letterSpacing: 1,
+              }}
+            >
+              LIVE DATA
+            </span>
+          </div>
+        )}
         {!isMobile && (
           <div
             style={{
@@ -734,17 +951,14 @@ function Header({ time, isMobile, active, setActive }) {
               marginLeft: 6,
             }}
           >
-            {navItems.map((it) => {
-              const isActive = active === it.id;
-              return (
-                <NavButton
-                  key={it.id}
-                  item={it}
-                  isActive={isActive}
-                  onClick={() => setActive(it.id)}
-                />
-              );
-            })}
+            {navItems.map((it) => (
+              <NavButton
+                key={it.id}
+                item={it}
+                isActive={active === it.id}
+                onClick={() => setActive(it.id)}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -784,7 +998,7 @@ function Header({ time, isMobile, active, setActive }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "background 0.25s ease, border-color 0.25s ease",
+            transition: "all 0.25s ease",
           }}
         >
           {dark ? "🌙" : "☀️"}
@@ -794,12 +1008,21 @@ function Header({ time, isMobile, active, setActive }) {
   );
 }
 
-function PageContent({ active, isMobile, range, setRange }) {
+// ── Page Content ─────────────────────────────────────────────
+function PageContent({
+  active,
+  isMobile,
+  range,
+  setRange,
+  data,
+  loading,
+  error,
+}) {
   switch (active) {
     case "MARKET":
-      return <SkillTracker isMobile={isMobile} />;
+      return <SkillTracker isMobile={isMobile} data={data} loading={loading} />;
     case "JOBS":
-      return <SalaryMap isMobile={isMobile} />;
+      return <SalaryMap isMobile={isMobile} data={data} loading={loading} />;
     case "SETTINGS":
       return <AnalyzeData isMobile={isMobile} />;
     case "DASH":
@@ -812,10 +1035,17 @@ function PageContent({ active, isMobile, range, setRange }) {
             paddingBottom: isMobile ? 4 : 32,
           }}
         >
-          <SummaryCards isMobile={isMobile} />
-          <TopRoles isMobile={isMobile} />
-          <SalaryTrends range={range} setRange={setRange} isMobile={isMobile} />
-          <SkillsBar isMobile={isMobile} />
+          {error && <ErrorBanner message={error} />}
+          <SummaryCards data={data} loading={loading} isMobile={isMobile} />
+          <TopRoles data={data} loading={loading} isMobile={isMobile} />
+          <SalaryTrends
+            data={data}
+            loading={loading}
+            range={range}
+            setRange={setRange}
+            isMobile={isMobile}
+          />
+          <SkillsBar data={data} loading={loading} isMobile={isMobile} />
           <div style={{ height: 8 }} />
         </div>
       );
@@ -835,9 +1065,33 @@ function DashboardInner() {
   const { theme } = useTheme();
   const { BG } = theme;
   const [time, setTime] = useState("");
-  const [range, setRange] = useState("1M");
+  const [range, setRange] = useState("ALL");
   const [active, setActive] = useState("DASH");
   const [isMobile, setIsMobile] = useState(false);
+
+  // ── Real data state ──
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch all data once on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(`${API}/api/all`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setData(json);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -863,30 +1117,34 @@ function DashboardInner() {
     return () => clearInterval(id);
   }, []);
 
+  const layout = {
+    width: "100%",
+    height: "100vh",
+    background: BG,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+  };
+
   if (isMobile) {
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "100vh",
-          background: BG,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-        }}
-      >
+      <div style={layout}>
         <Header
           time={time}
           isMobile={true}
           active={active}
           setActive={setActive}
+          dataReady={!!data}
         />
         <PageContent
           active={active}
           isMobile={true}
           range={range}
           setRange={setRange}
+          data={data}
+          loading={loading}
+          error={error}
         />
         <BottomNav active={active} setActive={setActive} />
       </div>
@@ -894,28 +1152,22 @@ function DashboardInner() {
   }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100vh",
-        background: BG,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-      }}
-    >
+    <div style={layout}>
       <Header
         time={time}
         isMobile={false}
         active={active}
         setActive={setActive}
+        dataReady={!!data}
       />
       <PageContent
         active={active}
-        isMobile={isMobile}
+        isMobile={false}
         range={range}
         setRange={setRange}
+        data={data}
+        loading={loading}
+        error={error}
       />
     </div>
   );

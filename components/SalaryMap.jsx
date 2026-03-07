@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeContext";
 import {
   BarChart,
@@ -10,103 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
-
-// ── Dummy Data ──────────────────────────────────────────────
-const CITIES = [
-  {
-    city: "San Francisco, CA",
-    short: "SF",
-    min: 165,
-    median: 192,
-    max: 240,
-    yoy: "+12%",
-    yoyColorKey: "ACCENT_GREEN",
-    currency: "$",
-    flag: "🇺🇸",
-  },
-  {
-    city: "New York City, NY",
-    short: "NYC",
-    min: 150,
-    median: 178,
-    max: 215,
-    yoy: "+8%",
-    yoyColorKey: "ACCENT_GREEN",
-    currency: "$",
-    flag: "🇺🇸",
-  },
-  {
-    city: "London, UK",
-    short: "LDN",
-    min: 85,
-    median: 95,
-    max: 130,
-    yoy: "+4%",
-    yoyColorKey: "ACCENT_YELLOW",
-    currency: "£",
-    flag: "🇬🇧",
-  },
-  {
-    city: "Bangalore, IN",
-    short: "BLR",
-    min: 48,
-    median: 62,
-    max: 95,
-    yoy: "+18%",
-    yoyColorKey: "ACCENT_GREEN",
-    currency: "$",
-    flag: "🇮🇳",
-  },
-  {
-    city: "Berlin, DE",
-    short: "BER",
-    min: 70,
-    median: 88,
-    max: 120,
-    yoy: "+6%",
-    yoyColorKey: "ACCENT_GREEN",
-    currency: "€",
-    flag: "🇩🇪",
-  },
-  {
-    city: "Toronto, CA",
-    short: "TOR",
-    min: 90,
-    median: 112,
-    max: 155,
-    yoy: "+9%",
-    yoyColorKey: "ACCENT_GREEN",
-    currency: "$",
-    flag: "🇨🇦",
-  },
-];
-
-const ROLES = [
-  "Senior Data Scientist",
-  "ML Engineer",
-  "Data Analyst",
-  "Data Engineer",
-  "AI Researcher",
-];
-
-const CHART_DATA = CITIES.map((c) => ({
-  name: c.short,
-  min: c.min,
-  median: c.median,
-  max: c.max,
-  flag: c.flag,
-}));
-
-const COL_DATA = [
-  { city: "SF", salary: 192, col: 95, ratio: 2.0 },
-  { city: "NYC", salary: 178, col: 85, ratio: 2.1 },
-  { city: "LDN", salary: 95, col: 70, ratio: 1.36 },
-  { city: "BLR", salary: 62, col: 18, ratio: 3.4 },
-  { city: "BER", salary: 88, col: 55, ratio: 1.6 },
-  { city: "TOR", salary: 112, col: 65, ratio: 1.7 },
-];
 
 // ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
@@ -118,11 +22,29 @@ function useHover() {
   };
 }
 
+// ── Skeleton ─────────────────────────────────────────────────
+function Skeleton({ width = "100%", height = 32, style = {} }) {
+  const { theme } = useTheme();
+  return (
+    <div
+      style={{
+        width,
+        height,
+        background: `linear-gradient(90deg, ${theme.BORDER} 25%, ${theme.CARD_HOVER} 50%, ${theme.BORDER} 75%)`,
+        backgroundSize: "200% 100%",
+        borderRadius: 6,
+        ...style,
+      }}
+    />
+  );
+}
+
 // ── Custom Tooltip ───────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   const { theme } = useTheme();
   const { BORDER, TEXT, MUTED, TOOLTIP_BG } = theme;
   if (!active || !payload?.length) return null;
+  const fullLabel = payload[0]?.payload?.fullTitle || label;
   return (
     <div
       style={{
@@ -135,7 +57,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       }}
     >
       <div style={{ color: MUTED, marginBottom: 6, fontWeight: 700 }}>
-        {label}
+        {fullLabel}
       </div>
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color, marginBottom: 2 }}>
@@ -146,10 +68,50 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+const TITLE_ABBREVIATIONS = {
+  "Senior Data Scientist": "Sr. DS",
+  "Machine Learning Engineer": "MLE",
+  "Data Engineer": "DE",
+  "Software Engineer": "SWE",
+  "Senior Data Engineer": "Sr. DE",
+  "Senior Data Analyst": "Sr. DA",
+  "Data Scientist": "DS",
+  "Data Analyst": "DA",
+};
+
+function formatJobTitleTick(title) {
+  if (!title) return "";
+  const trimmed = title.trim();
+  if (TITLE_ABBREVIATIONS[trimmed]) return TITLE_ABBREVIATIONS[trimmed];
+
+  const abbreviated = trimmed
+    .replace(/^Senior\b/i, "Sr.")
+    .replace(/Machine Learning/gi, "ML")
+    .replace(/Data Scientist/gi, "DS")
+    .replace(/Data Engineer/gi, "DE")
+    .replace(/Data Analyst/gi, "DA")
+    .replace(/Software Engineer/gi, "SWE")
+    .replace(/Engineer/gi, "Eng.")
+    .replace(/Scientist/gi, "Sci.")
+    .replace(/Analyst/gi, "Anl.");
+
+  return abbreviated.length > 12
+    ? `${abbreviated.slice(0, 10).trimEnd()}...`
+    : abbreviated;
+}
+
+function getBenchmarkId(title) {
+  const clean = (title || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `benchmark-${clean}`;
+}
+
 // ── Role Selector ────────────────────────────────────────────
-function RoleSelector({ role, setRole, isMobile }) {
+function RoleSelector({ role, setRole, roles, isMobile }) {
   const { theme } = useTheme();
-  const { CARD, BORDER, TEXT, MUTED } = theme;
+  const { CARD, BORDER, TEXT } = theme;
   return (
     <div style={{ margin: isMobile ? "14px 14px 0" : "20px 32px 0" }}>
       <select
@@ -157,7 +119,7 @@ function RoleSelector({ role, setRole, isMobile }) {
         onChange={(e) => setRole(e.target.value)}
         style={{
           width: "100%",
-          background: CARD,
+          backgroundColor: CARD,
           border: `1px solid ${BORDER}`,
           borderRadius: 10,
           padding: "10px 14px",
@@ -172,8 +134,8 @@ function RoleSelector({ role, setRole, isMobile }) {
           backgroundPosition: "right 14px center",
         }}
       >
-        {ROLES.map((r) => (
-          <option key={r} value={r} style={{ background: CARD }}>
+        {roles.map((r) => (
+          <option key={r} value={r} style={{ backgroundColor: CARD }}>
             {r}
           </option>
         ))}
@@ -182,10 +144,19 @@ function RoleSelector({ role, setRole, isMobile }) {
   );
 }
 
-// ── Salary Bar Chart ─────────────────────────────────────────
-function SalaryChart({ isMobile }) {
+// ── Salary By Title Chart ────────────────────────────────────
+function SalaryByTitleChart({ salaryData, isMobile }) {
   const { theme } = useTheme();
-  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN } = theme;
+  const { CARD, BORDER, CYAN, MUTED, TEXT, TOOLTIP_BG, ACCENT_GREEN } = theme;
+
+  const chartData = salaryData.slice(0, 8).map((s) => ({
+    name: s.title,
+    min: Math.round(s.min / 1000),
+    median: Math.round(s.median / 1000),
+    max: Math.round(s.max / 1000),
+    fullTitle: s.title,
+  }));
+
   return (
     <div
       style={{
@@ -215,7 +186,7 @@ function SalaryChart({ isMobile }) {
             letterSpacing: 1,
           }}
         >
-          SALARY COMPARISON
+          SALARY BY JOB TITLE
         </span>
         <span
           style={{
@@ -225,7 +196,7 @@ function SalaryChart({ isMobile }) {
             fontFamily: "monospace",
           }}
         >
-          GLOBAL DATA · USD
+          REAL DATA · USD
         </span>
       </div>
       <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
@@ -250,10 +221,10 @@ function SalaryChart({ isMobile }) {
           </div>
         ))}
       </div>
-      <ResponsiveContainer width="100%" height={isMobile ? 180 : 240}>
+      <ResponsiveContainer width="100%" height={isMobile ? 200 : 260}>
         <BarChart
-          data={CHART_DATA}
-          margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+          data={chartData}
+          margin={{ top: 4, right: 24, left: 24, bottom: 12 }}
           barGap={2}
         >
           <CartesianGrid
@@ -263,12 +234,18 @@ function SalaryChart({ isMobile }) {
           />
           <XAxis
             dataKey="name"
-            tick={{ fill: MUTED, fontSize: isMobile ? 10 : 12 }}
+            tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
+            tickFormatter={formatJobTitleTick}
+            interval={0}
+            minTickGap={8}
+            angle={0}
+            textAnchor="middle"
+            height={isMobile ? 30 : 26}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: MUTED, fontSize: isMobile ? 10 : 12 }}
+            tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
             axisLine={false}
             tickLine={false}
             unit="k"
@@ -279,21 +256,21 @@ function SalaryChart({ isMobile }) {
             name="Min"
             fill={MUTED}
             radius={[3, 3, 0, 0]}
-            barSize={isMobile ? 8 : 14}
+            barSize={isMobile ? 8 : 12}
           />
           <Bar
             dataKey="median"
             name="Median"
             fill={CYAN}
             radius={[3, 3, 0, 0]}
-            barSize={isMobile ? 8 : 14}
+            barSize={isMobile ? 8 : 12}
           />
           <Bar
             dataKey="max"
             name="Max"
             fill={ACCENT_GREEN}
             radius={[3, 3, 0, 0]}
-            barSize={isMobile ? 8 : 14}
+            barSize={isMobile ? 8 : 12}
           />
         </BarChart>
       </ResponsiveContainer>
@@ -301,27 +278,41 @@ function SalaryChart({ isMobile }) {
   );
 }
 
-// ── City Benchmark Card ──────────────────────────────────────
-function CityCard({ c, isMobile, isSelected, onClick }) {
+// ── Title Card ───────────────────────────────────────────────
+function TitleCard({ s, isMobile, isSelected, isHighlighted, onClick }) {
   const { theme } = useTheme();
-  const { CARD, BORDER, CYAN, MUTED, TEXT, SECONDARY_TEXT } = theme;
+  const { CARD, BORDER, CYAN, MUTED, TEXT, SECONDARY_TEXT, ACCENT_GREEN } =
+    theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const active = hovered || isSelected;
-  const yoyColor = theme[c.yoyColorKey];
+
   return (
     <div
-      onClick={() => onClick(c.city)}
+      id={getBenchmarkId(s.title)}
+      className={`transition-all duration-300 ${isHighlighted ? "ring-2 ring-teal-400" : ""}`}
+      onClick={() => onClick(s.title)}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       style={{
         background: isSelected ? `${CYAN}10` : hovered ? `${CYAN}08` : CARD,
-        border: `1px solid ${isSelected ? CYAN + "55" : hovered ? CYAN + "33" : BORDER}`,
+        border: `1px solid ${
+          isHighlighted
+            ? "#2dd4bf"
+            : isSelected
+              ? CYAN + "55"
+              : hovered
+                ? CYAN + "33"
+                : BORDER
+        }`,
         borderRadius: isMobile ? 10 : 12,
         padding: isMobile ? "12px" : "16px",
         cursor: "pointer",
-        transition:
-          "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
-        boxShadow: isSelected ? `0 0 12px ${CYAN}0f` : "none",
+        transition: "all 0.25s ease",
+        boxShadow: isHighlighted
+          ? "0 0 0 3px rgba(45, 212, 191, 0.22)"
+          : isSelected
+            ? `0 0 12px ${CYAN}0f`
+            : "none",
       }}
     >
       <div
@@ -341,7 +332,7 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
               marginBottom: 2,
             }}
           >
-            {c.flag} {c.city.toUpperCase()}
+            {s.title.toUpperCase()}
           </div>
           <div
             style={{
@@ -350,9 +341,7 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
               color: active ? TEXT : SECONDARY_TEXT,
             }}
           >
-            {c.currency}
-            {c.min}k – {c.currency}
-            {c.max}k
+            ${Math.round(s.min / 1000)}k – ${Math.round(s.max / 1000)}k
           </div>
         </div>
         <div
@@ -361,12 +350,12 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
             fontWeight: 700,
             padding: "3px 8px",
             borderRadius: 6,
-            background: `${yoyColor}18`,
-            border: `1px solid ${yoyColor}44`,
-            color: yoyColor,
+            background: `${ACCENT_GREEN}18`,
+            border: `1px solid ${ACCENT_GREEN}44`,
+            color: ACCENT_GREEN,
           }}
         >
-          {c.yoy} YoY
+          {s.count.toLocaleString()} jobs
         </div>
       </div>
 
@@ -383,8 +372,8 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
         <div
           style={{
             position: "absolute",
-            left: `${(c.min / c.max) * 100}%`,
-            width: `${((c.median - c.min) / c.max) * 100}%`,
+            left: `${(s.min / s.max) * 100}%`,
+            width: `${((s.median - s.min) / s.max) * 100}%`,
             height: "100%",
             background: CYAN,
             borderRadius: 2,
@@ -394,7 +383,7 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
         <div
           style={{
             position: "absolute",
-            left: `${(c.median / c.max) * 100}%`,
+            left: `${(s.median / s.max) * 100}%`,
             transform: "translateX(-50%)",
             width: 8,
             height: 8,
@@ -412,25 +401,24 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
           color: MUTED,
         }}
       >
-        <span>
-          25th ({c.currency}
-          {c.min}k)
-        </span>
+        <span>Min (${Math.round(s.min / 1000)}k)</span>
         <span style={{ color: CYAN }}>
-          Median ({c.currency}
-          {c.median}k)
+          Median (${Math.round(s.median / 1000)}k)
         </span>
-        <span>
-          75th ({c.currency}
-          {c.max}k)
-        </span>
+        <span>Max (${Math.round(s.max / 1000)}k)</span>
       </div>
     </div>
   );
 }
 
 // ── Benchmarks Grid ──────────────────────────────────────────
-function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
+function Benchmarks({
+  salaryData,
+  selectedTitle,
+  highlightedTitle,
+  setSelectedTitle,
+  isMobile,
+}) {
   const { theme } = useTheme();
   const { TEXT, MUTED, ACCENT_YELLOW } = theme;
   return (
@@ -460,11 +448,11 @@ function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
               letterSpacing: 1,
             }}
           >
-            MARKET BENCHMARKS
+            SALARY BENCHMARKS
           </span>
         </div>
         <span style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>
-          GLOBAL DATA
+          REAL DATA
         </span>
       </div>
       <div
@@ -474,13 +462,14 @@ function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
           gap: isMobile ? 10 : 14,
         }}
       >
-        {CITIES.map((c) => (
-          <CityCard
-            key={c.city}
-            c={c}
+        {salaryData.map((s) => (
+          <TitleCard
+            key={s.title}
+            s={s}
             isMobile={isMobile}
-            isSelected={selectedCity === c.city}
-            onClick={setSelectedCity}
+            isSelected={selectedTitle === s.title}
+            isHighlighted={highlightedTitle === s.title}
+            onClick={setSelectedTitle}
           />
         ))}
       </div>
@@ -488,8 +477,8 @@ function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
   );
 }
 
-// ── Cost of Living vs Salary ─────────────────────────────────
-function CostOfLiving({ isMobile }) {
+// ── Remote Breakdown ─────────────────────────────────────────
+function RemoteBreakdown({ remoteData, isMobile }) {
   const { theme } = useTheme();
   const {
     CARD,
@@ -498,11 +487,11 @@ function CostOfLiving({ isMobile }) {
     MUTED,
     TEXT,
     SECONDARY_TEXT,
+    ACCENT_GREEN,
     ACCENT_PURPLE,
-    ACCENT_RED,
   } = theme;
-  const maxSalary = Math.max(...COL_DATA.map((d) => d.salary));
-  const maxCol = Math.max(...COL_DATA.map((d) => d.col));
+
+  if (!remoteData) return null;
 
   return (
     <div
@@ -519,7 +508,7 @@ function CostOfLiving({ isMobile }) {
           display: "flex",
           alignItems: "center",
           gap: 8,
-          marginBottom: 4,
+          marginBottom: 14,
         }}
       >
         <div
@@ -538,22 +527,155 @@ function CostOfLiving({ isMobile }) {
             letterSpacing: 1,
           }}
         >
-          COST OF LIVING vs SALARY
+          REMOTE vs ON-SITE
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            color: MUTED,
+            marginLeft: "auto",
+            fontFamily: "monospace",
+          }}
+        >
+          REAL DATA
         </span>
       </div>
-      <p
+
+      <div
         style={{
-          fontSize: 11,
-          color: MUTED,
-          marginBottom: 14,
-          fontFamily: "monospace",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 12,
+          marginBottom: 16,
         }}
       >
-        Adjusted for purchasing power parity (PPP)
-      </p>
+        {[
+          ["🌐 REMOTE", remoteData.remote_pct, remoteData.remote, CYAN],
+          [
+            "🏢 ON-SITE",
+            remoteData.onsite_pct,
+            remoteData.onsite,
+            ACCENT_GREEN,
+          ],
+        ].map(([label, pct, count, color]) => (
+          <div
+            key={label}
+            style={{
+              padding: "14px",
+              background: `${color}0a`,
+              border: `1px solid ${color}33`,
+              borderRadius: 10,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
+              {label}
+            </div>
+            <div
+              style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, color }}
+            >
+              {pct}%
+            </div>
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+              {count.toLocaleString()} jobs
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {COL_DATA.map((d) => (
-        <div key={d.city} style={{ marginBottom: 12 }}>
+      {/* Bar */}
+      <div
+        style={{
+          height: 8,
+          background: BORDER,
+          borderRadius: 4,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${remoteData.remote_pct}%`,
+            background: `linear-gradient(90deg, ${CYAN}88, ${CYAN})`,
+            borderRadius: 4,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: 6,
+          fontSize: 10,
+          color: MUTED,
+        }}
+      >
+        <span style={{ color: CYAN }}>Remote {remoteData.remote_pct}%</span>
+        <span style={{ color: ACCENT_GREEN }}>
+          On-site {remoteData.onsite_pct}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Top Countries ────────────────────────────────────────────
+function TopCountries({ countries, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_YELLOW } = theme;
+
+  if (!countries?.length) return null;
+  const max = countries[0].count;
+
+  return (
+    <div
+      style={{
+        margin: isMobile ? "14px 14px 0" : "20px 32px 0",
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: isMobile ? 12 : 14,
+        padding: isMobile ? "14px" : "22px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 14,
+        }}
+      >
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: ACCENT_YELLOW,
+          }}
+        />
+        <span
+          style={{
+            fontSize: isMobile ? 12 : 14,
+            fontWeight: 700,
+            color: TEXT,
+            letterSpacing: 1,
+          }}
+        >
+          TOP COUNTRIES
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            color: MUTED,
+            marginLeft: "auto",
+            fontFamily: "monospace",
+          }}
+        >
+          BY JOB COUNT
+        </span>
+      </div>
+      {countries.slice(0, 8).map((c, i) => (
+        <div key={c.country} style={{ marginBottom: 10 }}>
           <div
             style={{
               display: "flex",
@@ -561,103 +683,80 @@ function CostOfLiving({ isMobile }) {
               marginBottom: 4,
             }}
           >
-            <span style={{ fontSize: 12, color: TEXT, fontWeight: 700 }}>
-              {d.city}
+            <span
+              style={{
+                fontSize: 13,
+                color: TEXT,
+                fontWeight: i === 0 ? 700 : 400,
+              }}
+            >
+              {c.country}
             </span>
-            <span style={{ fontSize: 11, color: CYAN }}>{d.ratio}x ratio</span>
+            <span style={{ fontSize: 11, color: CYAN }}>
+              {c.count.toLocaleString()} jobs
+            </span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 10, color: MUTED, width: 48 }}>
-                Salary
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  height: 6,
-                  background: BORDER,
-                  borderRadius: 3,
-                }}
-              >
-                <div
-                  style={{
-                    width: `${(d.salary / maxSalary) * 100}%`,
-                    height: "100%",
-                    borderRadius: 3,
-                    background: `linear-gradient(90deg, ${CYAN}88, ${CYAN})`,
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: MUTED,
-                  width: 36,
-                  textAlign: "right",
-                }}
-              >
-                ${d.salary}k
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 10, color: MUTED, width: 48 }}>CoL</span>
-              <div
-                style={{
-                  flex: 1,
-                  height: 6,
-                  background: BORDER,
-                  borderRadius: 3,
-                }}
-              >
-                <div
-                  style={{
-                    width: `${(d.col / maxSalary) * 100}%`,
-                    height: "100%",
-                    borderRadius: 3,
-                    background: `linear-gradient(90deg, ${ACCENT_RED}88, ${ACCENT_RED})`,
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: MUTED,
-                  width: 36,
-                  textAlign: "right",
-                }}
-              >
-                ${d.col}k
-              </span>
-            </div>
+          <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
+            <div
+              style={{
+                width: `${(c.count / max) * 100}%`,
+                height: "100%",
+                borderRadius: 2,
+                background: `linear-gradient(90deg, ${CYAN}88, ${CYAN})`,
+              }}
+            />
           </div>
         </div>
       ))}
-
-      <div
-        style={{
-          marginTop: 14,
-          padding: "10px 14px",
-          background: `${CYAN}0a`,
-          border: `1px solid ${CYAN}22`,
-          borderRadius: 8,
-          fontSize: 11,
-          color: SECONDARY_TEXT,
-          lineHeight: 1.6,
-        }}
-      >
-        💡 Bangalore currently offers the highest effective disposable income
-        relative to cost of living among all tracked cities.
-      </div>
     </div>
   );
 }
 
 // ── Main Export ──────────────────────────────────────────────
-export default function SalaryMap({ isMobile }) {
+export default function SalaryMap({ isMobile, data, loading }) {
   const { theme } = useTheme();
   const { CYAN, TEXT, MUTED, ACCENT_YELLOW } = theme;
-  const [role, setRole] = useState("Senior Data Scientist");
-  const [selectedCity, setSelectedCity] = useState("San Francisco, CA");
+
+  const salaryData = data?.salary_by_title || [];
+  const remoteData = data?.remote_breakdown || null;
+  const countries = data?.top_countries || [];
+  const roles = salaryData.map((s) => s.title);
+
+  const [role, setRole] = useState(null);
+  const [selectedTitle, setSelectedTitle] = useState(null);
+  const [highlightedTitle, setHighlightedTitle] = useState(null);
+  const highlightTimeoutRef = useRef(null);
+
+  const activeRole = role || roles[0] || "Senior Data Scientist";
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const highlightAndScrollToBenchmark = (title) => {
+    const card = document.getElementById(getBenchmarkId(title));
+    if (!card) return;
+
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    setSelectedTitle(title);
+    setHighlightedTitle(title);
+
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedTitle(null);
+    }, 2500);
+  };
+
+  const handleRoleSelection = (title) => {
+    setRole(title);
+    highlightAndScrollToBenchmark(title);
+  };
 
   return (
     <div style={{ overflowY: "auto", flex: 1, paddingBottom: 32 }}>
@@ -688,6 +787,21 @@ export default function SalaryMap({ isMobile }) {
           >
             SALARY_MAP<span style={{ color: MUTED }}>.global</span>
           </span>
+          {data && (
+            <span
+              style={{
+                fontSize: 10,
+                color: MUTED,
+                marginLeft: 8,
+                fontFamily: "monospace",
+                padding: "2px 8px",
+                borderRadius: 4,
+                border: `1px solid ${MUTED}33`,
+              }}
+            >
+              REAL DATA
+            </span>
+          )}
         </div>
         <p
           style={{
@@ -697,18 +811,67 @@ export default function SalaryMap({ isMobile }) {
             marginLeft: 16,
           }}
         >
-          Click any city card to highlight · All figures in USD equivalent
+          Click any title card to highlight · All figures from real job postings
         </p>
       </div>
 
-      <RoleSelector role={role} setRole={setRole} isMobile={isMobile} />
-      <SalaryChart isMobile={isMobile} />
-      <Benchmarks
-        selectedCity={selectedCity}
-        setSelectedCity={setSelectedCity}
-        isMobile={isMobile}
-      />
-      <CostOfLiving isMobile={isMobile} />
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={44} />
+        </div>
+      ) : (
+        roles.length > 0 && (
+          <RoleSelector
+            role={activeRole}
+            setRole={handleRoleSelection}
+            roles={roles}
+            isMobile={isMobile}
+          />
+        )
+      )}
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={260} />
+        </div>
+      ) : (
+        salaryData.length > 0 && (
+          <SalaryByTitleChart salaryData={salaryData} isMobile={isMobile} />
+        )
+      )}
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={400} />
+        </div>
+      ) : (
+        salaryData.length > 0 && (
+          <Benchmarks
+            salaryData={salaryData}
+            selectedTitle={selectedTitle || salaryData[0]?.title}
+            highlightedTitle={highlightedTitle}
+            setSelectedTitle={setSelectedTitle}
+            isMobile={isMobile}
+          />
+        )
+      )}
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={120} />
+        </div>
+      ) : (
+        <RemoteBreakdown remoteData={remoteData} isMobile={isMobile} />
+      )}
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={200} />
+        </div>
+      ) : (
+        <TopCountries countries={countries} isMobile={isMobile} />
+      )}
+
       <div style={{ height: 16 }} />
     </div>
   );

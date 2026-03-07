@@ -1,0 +1,917 @@
+{
+  "meta": {
+    "generated_at": "2026-03-07T20:02:15.643765",
+    "total_rows_processed": 785741,
+    "dataset": "lukebarousse/data_jobs"
+  },
+  "summary_stats": {
+    "total_jobs": 785741,
+    "avg_salary": 123199,
+    "active_companies": 139982,
+    "market_growth": "-6.9%"
+  },
+  "top_titles": [
+    {
+      "title": "Data Analyst",
+      "count": 196075,
+      "pct": 25.0
+    },
+    {
+      "title": "Data Engineer",
+      "count": 186241,
+      "pct": 23.7
+    },
+    {
+      "title": "Data Scientist",
+      "count": 172286,
+      "pct": 21.9
+    },
+    {
+      "title": "Business Analyst",
+      "count": 49063,
+      "pct": 6.2
+    },
+    {
+      "title": "Software Engineer",
+      "count": 44929,
+      "pct": 5.7
+    },
+    {
+      "title": "Senior Data Engineer",
+      "count": 44563,
+      "pct": 5.7
+    },
+    {
+      "title": "Senior Data Scientist",
+      "count": 36957,
+      "pct": 4.7
+    },
+    {
+      "title": "Senior Data Analyst",
+      "count": 29216,
+      "pct": 3.7
+    },
+    {
+      "title": "Machine Learning Engineer",
+      "count": 14080,
+      "pct": 1.8
+    },
+    {
+      "title": "Cloud Engineer",
+      "count": 12331,
+      "pct": 1.6
+    }
+  ],
+  "salary_by_title": [
+    {
+      "title": "Senior Data Scientist",
+      "avg": 153771,
+      "median": 155500,
+      "min": 45000,
+      "max": 475000,
+      "count": 1689
+    },
+    {
+      "title": "Senior Data Engineer",
+      "avg": 145841,
+      "median": 147500,
+      "min": 35000,
+      "max": 425000,
+      "count": 1591
+    },
+    {
+      "title": "Data Scientist",
+      "avg": 135850,
+      "median": 127500,
+      "min": 27000,
+      "max": 585000,
+      "count": 5921
+    },
+    {
+      "title": "Data Engineer",
+      "avg": 130151,
+      "median": 125000,
+      "min": 20000,
+      "max": 525000,
+      "count": 4499
+    },
+    {
+      "title": "Senior Data Analyst",
+      "avg": 113911,
+      "median": 111175,
+      "min": 30000,
+      "max": 425000,
+      "count": 1131
+    },
+    {
+      "title": "Machine Learning Engineer",
+      "avg": 126774,
+      "median": 106415,
+      "min": 30000,
+      "max": 325000,
+      "count": 576
+    },
+    {
+      "title": "Software Engineer",
+      "avg": 113394,
+      "median": 99150,
+      "min": 28000,
+      "max": 375000,
+      "count": 467
+    },
+    {
+      "title": "Cloud Engineer",
+      "avg": 111268,
+      "median": 90000,
+      "min": 42000,
+      "max": 280000,
+      "count": 65
+    },
+    {
+      "title": "Data Analyst",
+      "avg": 93740,
+      "median": 90000,
+      "min": 25000,
+      "max": 400000,
+      "count": 5450
+    },
+    {
+      "title": "Business Analyst",
+      "avg": 91205,
+      "median": 85000,
+      "min": 29900,
+      "max": 387460,
+      "count": 609
+    }
+  ],
+  "top_skills": [
+    {
+      "skill": "sql",
+      "count": 384849,
+      "pct": 49.0
+    },
+    {
+      "skill": "python",
+      "count": 380909,
+      "pct": 48.5
+    },
+    {
+      "skill": "aws",
+      "count": 145381,
+      "pct": 18.5
+    },
+    {
+      "skill": "azure",
+      "count": 132527,
+      "pct": 16.9
+    },
+    {
+      "skill": "r",
+      "count": 130892,
+      "pct": 16.7
+    },
+    {
+      "skill": "tableau",
+      "count": 127213,
+      "pct": 16.2
+    },
+    {
+      "skill": "excel",
+      "count": 127018,
+      "pct": 16.2
+    },
+    {
+      "skill": "spark",
+      "count": 114609,
+      "pct": 14.6
+    },
+    {
+      "skill": "power bi",
+      "count": 98147,
+      "pct": 12.5
+    },
+    {
+      "skill": "java",
+      "count": 85612,
+      "pct": 10.9
+    },
+    {
+      "skill": "sas",
+      "count": 83404,
+      "pct": 10.6
+    },
+    {
+      "skill": "hadoop",
+      "count": 64842,
+      "pct": 8.3
+    },
+    {
+      "skill": "scala",
+      "count": 56886,
+      "pct": 7.2
+    },
+    {
+      "skill": "snowflake",
+      "count": 55015,
+      "pct": 7.0
+    },
+    {
+      "skill": "databricks",
+      "count": 53182,
+      "pct": 6.8
+    },
+    {
+      "skill": "gcp",
+      "count": 50727,
+      "pct": 6.5
+    },
+    {
+      "skill": "git",
+      "count": 50226,
+      "pct": 6.4
+    },
+    {
+      "skill": "kafka",
+      "count": 49926,
+      "pct": 6.4
+    },
+    {
+      "skill": "airflow",
+      "count": 45254,
+      "pct": 5.8
+    },
+    {
+      "skill": "oracle",
+      "count": 45221,
+      "pct": 5.8
+    }
+  ],
+  "skills_by_title": {
+    "Data Analyst": [
+      {
+        "skill": "sql",
+        "count": 92428,
+        "pct": 47.1
+      },
+      {
+        "skill": "excel",
+        "count": 66860,
+        "pct": 34.1
+      },
+      {
+        "skill": "python",
+        "count": 57190,
+        "pct": 29.2
+      },
+      {
+        "skill": "tableau",
+        "count": 46455,
+        "pct": 23.7
+      },
+      {
+        "skill": "power bi",
+        "count": 39380,
+        "pct": 20.1
+      },
+      {
+        "skill": "r",
+        "count": 29996,
+        "pct": 15.3
+      },
+      {
+        "skill": "sas",
+        "count": 27998,
+        "pct": 14.3
+      },
+      {
+        "skill": "powerpoint",
+        "count": 13822,
+        "pct": 7.0
+      }
+    ],
+    "Data Engineer": [
+      {
+        "skill": "sql",
+        "count": 113130,
+        "pct": 60.7
+      },
+      {
+        "skill": "python",
+        "count": 108022,
+        "pct": 58.0
+      },
+      {
+        "skill": "aws",
+        "count": 62049,
+        "pct": 33.3
+      },
+      {
+        "skill": "azure",
+        "count": 60674,
+        "pct": 32.6
+      },
+      {
+        "skill": "spark",
+        "count": 53656,
+        "pct": 28.8
+      },
+      {
+        "skill": "java",
+        "count": 35559,
+        "pct": 19.1
+      },
+      {
+        "skill": "kafka",
+        "count": 29073,
+        "pct": 15.6
+      },
+      {
+        "skill": "hadoop",
+        "count": 28815,
+        "pct": 15.5
+      }
+    ],
+    "Data Scientist": [
+      {
+        "skill": "python",
+        "count": 113711,
+        "pct": 66.0
+      },
+      {
+        "skill": "sql",
+        "count": 78982,
+        "pct": 45.8
+      },
+      {
+        "skill": "r",
+        "count": 59566,
+        "pct": 34.6
+      },
+      {
+        "skill": "sas",
+        "count": 29534,
+        "pct": 17.1
+      },
+      {
+        "skill": "tableau",
+        "count": 29445,
+        "pct": 17.1
+      },
+      {
+        "skill": "aws",
+        "count": 26256,
+        "pct": 15.2
+      },
+      {
+        "skill": "spark",
+        "count": 24286,
+        "pct": 14.1
+      },
+      {
+        "skill": "azure",
+        "count": 21664,
+        "pct": 12.6
+      }
+    ],
+    "Business Analyst": [
+      {
+        "skill": "sql",
+        "count": 17346,
+        "pct": 35.4
+      },
+      {
+        "skill": "excel",
+        "count": 17108,
+        "pct": 34.9
+      },
+      {
+        "skill": "tableau",
+        "count": 9313,
+        "pct": 19.0
+      },
+      {
+        "skill": "power bi",
+        "count": 9229,
+        "pct": 18.8
+      },
+      {
+        "skill": "python",
+        "count": 8089,
+        "pct": 16.5
+      },
+      {
+        "skill": "powerpoint",
+        "count": 4583,
+        "pct": 9.3
+      },
+      {
+        "skill": "r",
+        "count": 4032,
+        "pct": 8.2
+      },
+      {
+        "skill": "word",
+        "count": 3666,
+        "pct": 7.5
+      }
+    ],
+    "Software Engineer": [
+      {
+        "skill": "python",
+        "count": 15254,
+        "pct": 34.0
+      },
+      {
+        "skill": "sql",
+        "count": 12341,
+        "pct": 27.5
+      },
+      {
+        "skill": "aws",
+        "count": 10446,
+        "pct": 23.3
+      },
+      {
+        "skill": "java",
+        "count": 9859,
+        "pct": 21.9
+      },
+      {
+        "skill": "azure",
+        "count": 7103,
+        "pct": 15.8
+      },
+      {
+        "skill": "kubernetes",
+        "count": 6624,
+        "pct": 14.7
+      },
+      {
+        "skill": "docker",
+        "count": 6314,
+        "pct": 14.1
+      },
+      {
+        "skill": "linux",
+        "count": 5537,
+        "pct": 12.3
+      }
+    ],
+    "Senior Data Engineer": [
+      {
+        "skill": "python",
+        "count": 28884,
+        "pct": 64.8
+      },
+      {
+        "skill": "sql",
+        "count": 28594,
+        "pct": 64.2
+      },
+      {
+        "skill": "aws",
+        "count": 19332,
+        "pct": 43.4
+      },
+      {
+        "skill": "azure",
+        "count": 16177,
+        "pct": 36.3
+      },
+      {
+        "skill": "spark",
+        "count": 16046,
+        "pct": 36.0
+      },
+      {
+        "skill": "java",
+        "count": 10126,
+        "pct": 22.7
+      },
+      {
+        "skill": "kafka",
+        "count": 9677,
+        "pct": 21.7
+      },
+      {
+        "skill": "snowflake",
+        "count": 9100,
+        "pct": 20.4
+      }
+    ]
+  },
+  "optimal_skills": [
+    {
+      "skill": "mongo",
+      "median_salary": 173500,
+      "demand_pct": 0.0,
+      "count": 256
+    },
+    {
+      "skill": "cassandra",
+      "median_salary": 150000,
+      "demand_pct": 0.1,
+      "count": 524
+    },
+    {
+      "skill": "golang",
+      "median_salary": 147500,
+      "demand_pct": 0.0,
+      "count": 110
+    },
+    {
+      "skill": "neo4j",
+      "median_salary": 147500,
+      "demand_pct": 0.0,
+      "count": 124
+    },
+    {
+      "skill": "kafka",
+      "median_salary": 147500,
+      "demand_pct": 0.2,
+      "count": 1634
+    },
+    {
+      "skill": "atlassian",
+      "median_salary": 147500,
+      "demand_pct": 0.0,
+      "count": 101
+    },
+    {
+      "skill": "pytorch",
+      "median_salary": 147500,
+      "demand_pct": 0.1,
+      "count": 1078
+    },
+    {
+      "skill": "scala",
+      "median_salary": 147500,
+      "demand_pct": 0.2,
+      "count": 1905
+    },
+    {
+      "skill": "redis",
+      "median_salary": 147500,
+      "demand_pct": 0.0,
+      "count": 117
+    },
+    {
+      "skill": "airflow",
+      "median_salary": 147295,
+      "demand_pct": 0.2,
+      "count": 1496
+    },
+    {
+      "skill": "shell",
+      "median_salary": 145125,
+      "demand_pct": 0.1,
+      "count": 718
+    },
+    {
+      "skill": "tensorflow",
+      "median_salary": 145000,
+      "demand_pct": 0.2,
+      "count": 1225
+    },
+    {
+      "skill": "dynamodb",
+      "median_salary": 140000,
+      "demand_pct": 0.0,
+      "count": 219
+    },
+    {
+      "skill": "redshift",
+      "median_salary": 140000,
+      "demand_pct": 0.2,
+      "count": 1511
+    },
+    {
+      "skill": "typescript",
+      "median_salary": 140000,
+      "demand_pct": 0.0,
+      "count": 117
+    },
+    {
+      "skill": "spark",
+      "median_salary": 140000,
+      "demand_pct": 0.5,
+      "count": 4014
+    },
+    {
+      "skill": "kubernetes",
+      "median_salary": 139216,
+      "demand_pct": 0.1,
+      "count": 925
+    },
+    {
+      "skill": "nosql",
+      "median_salary": 138640,
+      "demand_pct": 0.2,
+      "count": 1677
+    },
+    {
+      "skill": "scikit-learn",
+      "median_salary": 137610,
+      "demand_pct": 0.1,
+      "count": 687
+    },
+    {
+      "skill": "pandas",
+      "median_salary": 136500,
+      "demand_pct": 0.1,
+      "count": 1043
+    }
+  ],
+  "skill_trends": [
+    {
+      "year_month": "2023-01",
+      "aws": 16805,
+      "azure": 15385,
+      "excel": 15087,
+      "java": 10447,
+      "power bi": 10660,
+      "python": 44889,
+      "r": 16351,
+      "spark": 14304,
+      "sql": 45774,
+      "tableau": 14805
+    },
+    {
+      "year_month": "2023-02",
+      "aws": 12219,
+      "azure": 11114,
+      "excel": 10732,
+      "java": 7507,
+      "power bi": 8033,
+      "python": 31943,
+      "r": 11288,
+      "spark": 10170,
+      "sql": 32720,
+      "tableau": 11008
+    },
+    {
+      "year_month": "2023-03",
+      "aws": 12458,
+      "azure": 11152,
+      "excel": 10546,
+      "java": 7649,
+      "power bi": 7868,
+      "python": 31990,
+      "r": 11358,
+      "spark": 9994,
+      "sql": 32282,
+      "tableau": 10870
+    },
+    {
+      "year_month": "2023-04",
+      "aws": 11635,
+      "azure": 10557,
+      "excel": 10562,
+      "java": 7294,
+      "power bi": 7792,
+      "python": 30482,
+      "r": 10647,
+      "spark": 9234,
+      "sql": 31096,
+      "tableau": 10430
+    },
+    {
+      "year_month": "2023-05",
+      "aws": 10394,
+      "azure": 9111,
+      "excel": 8477,
+      "java": 6004,
+      "power bi": 6869,
+      "python": 26908,
+      "r": 9339,
+      "spark": 8278,
+      "sql": 27096,
+      "tableau": 9236
+    },
+    {
+      "year_month": "2023-06",
+      "aws": 11759,
+      "azure": 10793,
+      "excel": 10397,
+      "java": 6886,
+      "power bi": 8286,
+      "python": 31216,
+      "r": 10820,
+      "spark": 9729,
+      "sql": 31671,
+      "tableau": 10575
+    },
+    {
+      "year_month": "2023-07",
+      "aws": 12017,
+      "azure": 10960,
+      "excel": 10301,
+      "java": 6818,
+      "power bi": 8500,
+      "python": 31257,
+      "r": 10793,
+      "spark": 9085,
+      "sql": 31869,
+      "tableau": 10758
+    },
+    {
+      "year_month": "2023-08",
+      "aws": 13817,
+      "azure": 12193,
+      "excel": 12563,
+      "java": 7937,
+      "power bi": 9450,
+      "python": 36228,
+      "r": 13037,
+      "spark": 10533,
+      "sql": 36699,
+      "tableau": 12497
+    },
+    {
+      "year_month": "2023-09",
+      "aws": 10934,
+      "azure": 10221,
+      "excel": 9649,
+      "java": 6120,
+      "power bi": 7764,
+      "python": 28616,
+      "r": 9248,
+      "spark": 8383,
+      "sql": 28926,
+      "tableau": 9344
+    },
+    {
+      "year_month": "2023-10",
+      "aws": 11638,
+      "azure": 10923,
+      "excel": 10508,
+      "java": 6627,
+      "power bi": 8232,
+      "python": 30590,
+      "r": 9990,
+      "spark": 8723,
+      "sql": 30743,
+      "tableau": 9940
+    },
+    {
+      "year_month": "2023-11",
+      "aws": 11439,
+      "azure": 10681,
+      "excel": 9719,
+      "java": 6568,
+      "power bi": 7713,
+      "python": 30112,
+      "r": 9654,
+      "spark": 8582,
+      "sql": 29864,
+      "tableau": 9406
+    },
+    {
+      "year_month": "2023-12",
+      "aws": 10266,
+      "azure": 9437,
+      "excel": 8477,
+      "java": 5755,
+      "power bi": 6980,
+      "python": 26678,
+      "r": 8367,
+      "spark": 7594,
+      "sql": 26109,
+      "tableau": 8344
+    }
+  ],
+  "salary_trends": [
+    {
+      "month": "2023-01",
+      "avg": 123007,
+      "median": 115000,
+      "min": 32500,
+      "max": 475000
+    },
+    {
+      "month": "2023-02",
+      "avg": 122652,
+      "median": 115000,
+      "min": 23496,
+      "max": 375000
+    },
+    {
+      "month": "2023-03",
+      "avg": 122948,
+      "median": 117050,
+      "min": 25000,
+      "max": 375000
+    },
+    {
+      "month": "2023-04",
+      "avg": 121857,
+      "median": 115000,
+      "min": 33488,
+      "max": 525000
+    },
+    {
+      "month": "2023-05",
+      "avg": 123275,
+      "median": 115000,
+      "min": 35000,
+      "max": 425000
+    },
+    {
+      "month": "2023-06",
+      "avg": 124321,
+      "median": 115000,
+      "min": 35000,
+      "max": 425000
+    },
+    {
+      "month": "2023-07",
+      "avg": 123471,
+      "median": 115000,
+      "min": 20000,
+      "max": 390000
+    },
+    {
+      "month": "2023-08",
+      "avg": 125819,
+      "median": 115000,
+      "min": 30000,
+      "max": 550000
+    },
+    {
+      "month": "2023-09",
+      "avg": 125223,
+      "median": 117750,
+      "min": 24000,
+      "max": 525000
+    },
+    {
+      "month": "2023-10",
+      "avg": 124607,
+      "median": 117803,
+      "min": 26444,
+      "max": 425000
+    },
+    {
+      "month": "2023-11",
+      "avg": 119131,
+      "median": 112350,
+      "min": 30000,
+      "max": 463500
+    },
+    {
+      "month": "2023-12",
+      "avg": 120276,
+      "median": 112500,
+      "min": 25920,
+      "max": 585000
+    }
+  ],
+  "remote_breakdown": {
+    "remote": 69552,
+    "onsite": 716189,
+    "remote_pct": 8.9,
+    "onsite_pct": 91.1
+  },
+  "top_countries": [
+    {
+      "country": "United States",
+      "count": 206292
+    },
+    {
+      "country": "India",
+      "count": 51088
+    },
+    {
+      "country": "United Kingdom",
+      "count": 40375
+    },
+    {
+      "country": "France",
+      "count": 39922
+    },
+    {
+      "country": "Germany",
+      "count": 27694
+    },
+    {
+      "country": "Spain",
+      "count": 25100
+    },
+    {
+      "country": "Singapore",
+      "count": 23696
+    },
+    {
+      "country": "Sudan",
+      "count": 21781
+    },
+    {
+      "country": "Netherlands",
+      "count": 20631
+    },
+    {
+      "country": "Italy",
+      "count": 17013
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeContext";
 import {
   AreaChart,
@@ -10,68 +10,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from "recharts";
 
-// ── Dummy Data ──────────────────────────────────────────────
-const SKILLS = [
-  {
-    rank: "01",
-    name: "Python",
-    pct: 84,
-    badge: "HIGH_GROWTH",
-    badgeColorKey: "CYAN",
-  },
-  { rank: "02", name: "SQL", pct: 72, badge: "STABLE", badgeColorKey: "MUTED" },
-  {
-    rank: "03",
-    name: "PyTorch",
-    pct: 68,
-    badge: "EXPLODING",
-    badgeColorKey: "ACCENT_RED",
-  },
-  {
-    rank: "04",
-    name: "AWS",
-    pct: 64,
-    badge: "RISING",
-    badgeColorKey: "ACCENT_GREEN",
-  },
-  {
-    rank: "05",
-    name: "Docker",
-    pct: 59,
-    badge: "STABLE",
-    badgeColorKey: "MUTED",
-  },
-  {
-    rank: "06",
-    name: "TensorFlow",
-    pct: 55,
-    badge: "RISING",
-    badgeColorKey: "ACCENT_GREEN",
-  },
-  {
-    rank: "07",
-    name: "Spark",
-    pct: 48,
-    badge: "STABLE",
-    badgeColorKey: "MUTED",
-  },
-];
-
 const INDUSTRIES = ["ALL_INDUSTRIES", "FINTECH", "HEALTHCARE", "E-COMMERCE"];
-
-const DEMAND_CURVE = [
-  { month: "JAN '23", value: 58 },
-  { month: "APR", value: 62 },
-  { month: "JUL", value: 60 },
-  { month: "OCT", value: 68 },
-  { month: "JAN '24", value: 75 },
-  { month: "APR", value: 78 },
-  { month: "JUL", value: 76 },
-  { month: "OCT", value: 82 },
-  { month: "JAN '25", value: 84 },
-];
 
 const BADGE_ICONS = {
   HIGH_GROWTH: "↗",
@@ -79,6 +22,36 @@ const BADGE_ICONS = {
   EXPLODING: "⚡",
   RISING: "↗",
 };
+
+function getSkillRowId(skillName) {
+  const clean = (skillName || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `skill-${clean}`;
+}
+
+function findSkillByQuery(query, skillData) {
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+
+  const exact = skillData.find((s) => s.skill.toLowerCase() === q);
+  if (exact) return exact;
+
+  const startsWith = skillData.find((s) => s.skill.toLowerCase().startsWith(q));
+  if (startsWith) return startsWith;
+
+  return skillData.find((s) => s.skill.toLowerCase().includes(q)) || null;
+}
+
+// Assign badge based on demand %
+function getBadge(pct) {
+  if (pct >= 50) return { badge: "HIGH_GROWTH", colorKey: "CYAN" };
+  if (pct >= 30) return { badge: "RISING", colorKey: "ACCENT_GREEN" };
+  if (pct >= 15) return { badge: "STABLE", colorKey: "MUTED" };
+  return { badge: "EXPLODING", colorKey: "ACCENT_RED" };
+}
 
 // ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
@@ -88,6 +61,23 @@ function useHover() {
     onMouseEnter: () => setHovered(true),
     onMouseLeave: () => setHovered(false),
   };
+}
+
+// ── Skeleton ─────────────────────────────────────────────────
+function Skeleton({ width = "100%", height = 32, style = {} }) {
+  const { theme } = useTheme();
+  return (
+    <div
+      style={{
+        width,
+        height,
+        background: `linear-gradient(90deg, ${theme.BORDER} 25%, ${theme.CARD_HOVER} 50%, ${theme.BORDER} 75%)`,
+        backgroundSize: "200% 100%",
+        borderRadius: 6,
+        ...style,
+      }}
+    />
+  );
 }
 
 // ── Custom Tooltip ───────────────────────────────────────────
@@ -108,14 +98,14 @@ const CustomTooltip = ({ active, payload, label }) => {
     >
       <div style={{ color: MUTED, marginBottom: 4 }}>{label}</div>
       <div style={{ color: CYAN }}>
-        Demand: <strong>{payload[0].value}%</strong>
+        Demand: <strong>{payload[0].value}</strong>
       </div>
     </div>
   );
 };
 
 // ── Search Bar ───────────────────────────────────────────────
-function SearchBar({ query, setQuery, isMobile }) {
+function SearchBar({ query, setQuery, onSubmitSearch, isMobile }) {
   const { theme } = useTheme();
   const { CARD, BORDER, CYAN, TEXT, MUTED } = theme;
   const [focused, setFocused] = useState(false);
@@ -141,9 +131,15 @@ function SearchBar({ query, setQuery, isMobile }) {
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSubmitSearch();
+          }
+        }}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="QUERY_SKILLS_DATABASE..."
+        placeholder="SEARCH SKILLS..."
         style={{
           width: "100%",
           background: CARD,
@@ -154,9 +150,8 @@ function SearchBar({ query, setQuery, isMobile }) {
           fontSize: isMobile ? 12 : 13,
           fontFamily: "'JetBrains Mono', monospace",
           outline: "none",
-          boxShadow: focused ? `0 0 12px ${CYAN}0f` : "none",
-          transition: "border-color 0.25s ease, box-shadow 0.25s ease",
           boxSizing: "border-box",
+          transition: "border-color 0.25s ease",
         }}
       />
     </div>
@@ -189,8 +184,7 @@ function IndustryButton({ ind, selected, setSelected }) {
             : "transparent",
         color: isActive ? CYAN : hovered ? TEXT : MUTED,
         cursor: "pointer",
-        transition:
-          "background 0.25s ease, border-color 0.25s ease, color 0.25s ease",
+        transition: "all 0.25s ease",
       }}
     >
       {ind}
@@ -221,17 +215,18 @@ function IndustryFilter({ selected, setSelected, isMobile }) {
 }
 
 // ── Demand Curve ─────────────────────────────────────────────
-function DemandCurve({ selectedSkill, isMobile }) {
+function DemandCurve({ selectedSkill, skillData, isMobile }) {
   const { theme } = useTheme();
   const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN } = theme;
-  const skill = SKILLS.find((s) => s.name === selectedSkill) || SKILLS[0];
-  const chartData = DEMAND_CURVE.map((d) => ({
-    ...d,
-    value: Math.round(d.value * (skill.pct / 84)),
-  }));
+
+  // Build chart data from real skill_trends
+  const skill =
+    skillData.find((s) => s.skill === selectedSkill) || skillData[0];
+  const skillName = skill?.skill || selectedSkill;
 
   return (
     <div
+      id="skill-demand-summary"
       style={{
         margin: isMobile ? "14px 14px 0" : "20px 32px 0",
         background: CARD,
@@ -257,7 +252,7 @@ function DemandCurve({ selectedSkill, isMobile }) {
               letterSpacing: 1,
             }}
           >
-            {skill.name.toUpperCase()}_DEMAND_CURVE
+            {skillName.toUpperCase()}_DEMAND
           </div>
           <div
             style={{
@@ -267,7 +262,7 @@ function DemandCurve({ selectedSkill, isMobile }) {
               fontFamily: "monospace",
             }}
           >
-            INTERVAL: 24_MONTHS
+            % OF JOB POSTINGS REQUIRING THIS SKILL
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -278,65 +273,91 @@ function DemandCurve({ selectedSkill, isMobile }) {
               color: TEXT,
             }}
           >
-            {skill.pct}%
+            {skill?.pct ?? 0}%
           </div>
           <div style={{ fontSize: 11, color: ACCENT_GREEN, marginTop: 2 }}>
-            +12.4% YoY
+            of all postings
           </div>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={isMobile ? 100 : 140}>
-        <AreaChart
-          data={chartData}
-          margin={{ top: 8, right: 0, left: -28, bottom: 0 }}
+
+      {/* Simple bar showing demand */}
+      <div
+        style={{
+          marginTop: 16,
+          height: 6,
+          background: BORDER,
+          borderRadius: 3,
+        }}
+      >
+        <div
+          style={{
+            width: `${skill?.pct ?? 0}%`,
+            height: "100%",
+            borderRadius: 3,
+            background: `linear-gradient(90deg, ${CYAN}88, ${CYAN})`,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: 6,
+          fontSize: 10,
+          color: MUTED,
+        }}
+      >
+        <span>0%</span>
+        <span style={{ color: CYAN }}>{skill?.pct ?? 0}% demand</span>
+        <span>100%</span>
+      </div>
+
+      {skill && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: "10px 14px",
+            background: `${CYAN}0a`,
+            border: `1px solid ${CYAN}22`,
+            borderRadius: 8,
+            fontSize: 11,
+            color: MUTED,
+          }}
         >
-          <defs>
-            <linearGradient id="demandGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={CYAN} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={CYAN} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={BORDER}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="month"
-            tick={{ fill: MUTED, fontSize: 9 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: MUTED, fontSize: 9 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={CYAN}
-            strokeWidth={2}
-            fill="url(#demandGrad)"
-            dot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+          Found in{" "}
+          <span style={{ color: CYAN, fontWeight: 700 }}>
+            {skill.count.toLocaleString()}
+          </span>{" "}
+          job postings out of {skill.totalJobs?.toLocaleString() ?? "785,741"}{" "}
+          total
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Skill Row ────────────────────────────────────────────────
-function SkillRow({ skill, isMobile, onClick, isSelected }) {
+function SkillRow({
+  skill,
+  rank,
+  isMobile,
+  onClick,
+  isSelected,
+  isHighlighted,
+}) {
   const { theme } = useTheme();
   const { CYAN, TEXT, MUTED, BORDER, SECONDARY_TEXT } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const active = hovered || isSelected;
-  const badgeColor = theme[skill.badgeColorKey];
+  const { badge, colorKey } = getBadge(skill.pct);
+  const badgeColor = theme[colorKey];
+
   return (
     <div
-      onClick={() => onClick(skill.name)}
+      id={getSkillRowId(skill.skill)}
+      className={`transition-all duration-300 ${isHighlighted ? "ring-2 ring-teal-400" : ""}`}
+      onClick={() => onClick(skill.skill)}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       style={{
@@ -351,8 +372,11 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
           : hovered
             ? `${CYAN}08`
             : "transparent",
-        border: `1px solid ${isSelected ? CYAN + "44" : "transparent"}`,
-        transition: "background 0.25s ease, border-color 0.25s ease",
+        border: `1px solid ${
+          isHighlighted ? "#2dd4bf" : isSelected ? CYAN + "44" : "transparent"
+        }`,
+        transition: "all 0.25s ease",
+        boxShadow: isHighlighted ? "0 0 0 3px rgba(45, 212, 191, 0.2)" : "none",
         marginBottom: 4,
       }}
     >
@@ -363,12 +387,10 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
           fontWeight: 700,
           width: 24,
           flexShrink: 0,
-          transition: "color 0.15s ease",
         }}
       >
-        {skill.rank}
+        {String(rank).padStart(2, "0")}
       </div>
-
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -383,10 +405,9 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
               fontSize: isMobile ? 13 : 14,
               fontWeight: 700,
               color: active ? TEXT : SECONDARY_TEXT,
-              transition: "color 0.15s ease",
             }}
           >
-            {skill.name}
+            {skill.skill}
           </span>
           <span style={{ fontSize: isMobile ? 11 : 12, color: MUTED }}>
             {skill.pct}%
@@ -397,7 +418,7 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
             style={{
               height: "100%",
               borderRadius: 2,
-              width: `${skill.pct}%`,
+              width: `${Math.min(skill.pct, 100)}%`,
               background: `linear-gradient(90deg, ${CYAN}88, ${CYAN})`,
               opacity: active ? 1 : 0.6,
               transition: "opacity 0.15s ease",
@@ -405,7 +426,6 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
           />
         </div>
       </div>
-
       <div
         style={{
           fontSize: isMobile ? 9 : 10,
@@ -420,19 +440,28 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
           fontFamily: "monospace",
         }}
       >
-        {BADGE_ICONS[skill.badge]} {skill.badge}
+        {BADGE_ICONS[badge]} {badge}
       </div>
     </div>
   );
 }
 
 // ── Ranked Skills ────────────────────────────────────────────
-function RankedSkills({ query, selectedSkill, setSelectedSkill, isMobile }) {
+function RankedSkills({
+  query,
+  selectedSkill,
+  highlightedSkill,
+  setSelectedSkill,
+  skillData,
+  isMobile,
+}) {
   const { theme } = useTheme();
   const { CARD, BORDER, TEXT, MUTED } = theme;
-  const filtered = SKILLS.filter((s) =>
-    s.name.toLowerCase().includes(query.toLowerCase()),
+
+  const filtered = skillData.filter((s) =>
+    s.skill.toLowerCase().includes(query.toLowerCase()),
   );
+
   return (
     <div
       style={{
@@ -462,7 +491,7 @@ function RankedSkills({ query, selectedSkill, setSelectedSkill, isMobile }) {
           RANKED_SKILLS
         </span>
         <span style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>
-          SORT: BY_DEMAND
+          SORT: BY_DEMAND · REAL DATA
         </span>
       </div>
       {filtered.length === 0 ? (
@@ -477,13 +506,15 @@ function RankedSkills({ query, selectedSkill, setSelectedSkill, isMobile }) {
           No skills found for "{query}"
         </div>
       ) : (
-        filtered.map((skill) => (
+        filtered.map((skill, i) => (
           <SkillRow
-            key={skill.name}
+            key={skill.skill}
             skill={skill}
+            rank={i + 1}
             isMobile={isMobile}
             onClick={setSelectedSkill}
-            isSelected={selectedSkill === skill.name}
+            isSelected={selectedSkill === skill.skill}
+            isHighlighted={highlightedSkill === skill.skill}
           />
         ))
       )}
@@ -491,10 +522,140 @@ function RankedSkills({ query, selectedSkill, setSelectedSkill, isMobile }) {
   );
 }
 
+// ── Optimal Skills Chart ─────────────────────────────────────
+function OptimalSkills({ optimalData, isMobile }) {
+  const { theme } = useTheme();
+  const {
+    CARD,
+    BORDER,
+    CYAN,
+    MUTED,
+    TEXT,
+    TOOLTIP_BG,
+    ACCENT_PURPLE,
+    ACCENT_GREEN,
+  } = theme;
+
+  const chartData = optimalData.slice(0, 10).map((s) => ({
+    name: s.skill,
+    salary: Math.round(s.median_salary / 1000),
+    demand: s.demand_pct,
+  }));
+
+  return (
+    <div
+      style={{
+        margin: isMobile ? "14px 14px 0" : "20px 32px 0",
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: isMobile ? 12 : 14,
+        padding: isMobile ? "14px" : "22px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 4,
+        }}
+      >
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: ACCENT_PURPLE,
+          }}
+        />
+        <span
+          style={{
+            fontSize: isMobile ? 12 : 14,
+            fontWeight: 700,
+            color: TEXT,
+            letterSpacing: 1,
+          }}
+        >
+          OPTIMAL SKILLS
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            color: MUTED,
+            marginLeft: "auto",
+            fontFamily: "monospace",
+          }}
+        >
+          SALARY × DEMAND
+        </span>
+      </div>
+      <p
+        style={{
+          fontSize: 11,
+          color: MUTED,
+          marginBottom: 14,
+          fontFamily: "monospace",
+        }}
+      >
+        Highest paying skills from real job postings
+      </p>
+      <ResponsiveContainer width="100%" height={isMobile ? 200 : 280}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ top: 0, right: 40, left: 20, bottom: 0 }}
+        >
+          <XAxis
+            type="number"
+            tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
+            axisLine={false}
+            tickLine={false}
+            unit="k"
+          />
+          <YAxis
+            type="category"
+            dataKey="name"
+            tick={{ fill: TEXT, fontSize: isMobile ? 10 : 12 }}
+            axisLine={false}
+            tickLine={false}
+            width={70}
+          />
+          <Tooltip
+            cursor={{ fill: `${CYAN}11` }}
+            contentStyle={{
+              background: TOOLTIP_BG,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              fontSize: 11,
+            }}
+            formatter={(v, name) =>
+              name === "salary"
+                ? [`$${v}k`, "Median Salary"]
+                : [`${v}%`, "Demand"]
+            }
+          />
+          <Bar
+            dataKey="salary"
+            fill={ACCENT_GREEN}
+            radius={[0, 4, 4, 0]}
+            barSize={isMobile ? 10 : 14}
+            name="salary"
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 // ── Insight Box ──────────────────────────────────────────────
-function InsightBox({ isMobile }) {
+function InsightBox({ skillData, optimalData, isMobile }) {
   const { theme } = useTheme();
   const { CYAN, SECONDARY_TEXT, ACCENT_GREEN, ACCENT_RED } = theme;
+
+  const topSkill = skillData[0];
+  const topPaying = optimalData[0];
+  const fastestGrowing = skillData.find((s) => s.pct < 30 && s.pct > 10);
+
   return (
     <div
       style={{
@@ -514,7 +675,7 @@ function InsightBox({ isMobile }) {
           marginBottom: 8,
         }}
       >
-        📊 MARKET_INSIGHT
+        📊 MARKET_INSIGHT · REAL DATA
       </div>
       <div
         style={{
@@ -523,26 +684,111 @@ function InsightBox({ isMobile }) {
           lineHeight: 1.6,
         }}
       >
-        Python demand grew{" "}
-        <span style={{ color: CYAN, fontWeight: 700 }}>+12.4% YoY</span> —
-        highest among all tracked skills. PyTorch is the fastest-rising
-        framework with{" "}
-        <span style={{ color: ACCENT_RED, fontWeight: 700 }}>3× growth</span>{" "}
-        since 2023. Cloud skills (AWS, GCP) now appear in{" "}
-        <span style={{ color: ACCENT_GREEN, fontWeight: 700 }}>64%</span> of
-        senior DS postings.
+        {topSkill && (
+          <>
+            <span style={{ color: CYAN, fontWeight: 700 }}>
+              {topSkill.skill}
+            </span>{" "}
+            is the most demanded skill, appearing in{" "}
+            <span style={{ color: CYAN, fontWeight: 700 }}>
+              {topSkill.pct}%
+            </span>{" "}
+            of all job postings.{" "}
+          </>
+        )}
+        {topPaying && (
+          <>
+            Highest paying skill is{" "}
+            <span style={{ color: ACCENT_GREEN, fontWeight: 700 }}>
+              {topPaying.skill}
+            </span>{" "}
+            with a median salary of{" "}
+            <span style={{ color: ACCENT_GREEN, fontWeight: 700 }}>
+              ${(topPaying.median_salary / 1000).toFixed(0)}k
+            </span>
+            .{" "}
+          </>
+        )}
+        {fastestGrowing && (
+          <>
+            <span style={{ color: ACCENT_RED, fontWeight: 700 }}>
+              {fastestGrowing.skill}
+            </span>{" "}
+            is an emerging skill worth learning for career growth.
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Main Export (content only, no layout wrapper) ────────────
-export default function SkillTracker({ isMobile }) {
+// ── Main Export ──────────────────────────────────────────────
+export default function SkillTracker({ isMobile, data, loading }) {
   const { theme } = useTheme();
   const { CYAN, TEXT, MUTED } = theme;
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("ALL_INDUSTRIES");
-  const [selectedSkill, setSelectedSkill] = useState("Python");
+  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [highlightedSkill, setHighlightedSkill] = useState(null);
+  const highlightTimeoutRef = useRef(null);
+
+  // Build skill data from real API data
+  const skillData = data
+    ? data.top_skills.slice(0, 20).map((s) => ({
+        skill: s.skill,
+        pct: s.pct,
+        count: s.count,
+        totalJobs: data.meta.total_rows_processed,
+      }))
+    : [];
+
+  const optimalData = data ? data.optimal_skills : [];
+
+  const searchedSkill = findSkillByQuery(query, skillData);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const highlightSkillRow = (skillName) => {
+    setHighlightedSkill(skillName);
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedSkill(null);
+    }, 2500);
+  };
+
+  const scrollToSummaryCard = () => {
+    window.requestAnimationFrame(() => {
+      const summary = document.getElementById("skill-demand-summary");
+      if (summary) {
+        summary.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  };
+
+  const handleSearchSubmit = () => {
+    const match = findSkillByQuery(query, skillData);
+    if (!match) return;
+    setSelectedSkill(match.skill);
+    highlightSkillRow(match.skill);
+    scrollToSummaryCard();
+  };
+
+  const handleSkillRowSelect = (skillName) => {
+    setSelectedSkill(skillName);
+    highlightSkillRow(skillName);
+  };
+
+  // Auto-select first skill
+  const activeSkill =
+    searchedSkill?.skill || selectedSkill || skillData[0]?.skill || "python";
 
   return (
     <div style={{ overflowY: "auto", flex: 1, paddingBottom: 32 }}>
@@ -571,8 +817,23 @@ export default function SkillTracker({ isMobile }) {
               letterSpacing: 1,
             }}
           >
-            SKILL_TRACKER<span style={{ color: MUTED }}>.v1</span>
+            SKILL_TRACKER<span style={{ color: MUTED }}>.v2</span>
           </span>
+          {data && (
+            <span
+              style={{
+                fontSize: 10,
+                color: MUTED,
+                marginLeft: 8,
+                fontFamily: "monospace",
+                padding: "2px 8px",
+                borderRadius: 4,
+                border: `1px solid ${MUTED}33`,
+              }}
+            >
+              REAL DATA
+            </span>
+          )}
         </div>
         <p
           style={{
@@ -582,24 +843,74 @@ export default function SkillTracker({ isMobile }) {
             marginLeft: 16,
           }}
         >
-          Click any skill to update the demand curve
+          Click any skill to see demand details ·{" "}
+          {data
+            ? `${data.meta.total_rows_processed.toLocaleString()} postings analyzed`
+            : "Loading..."}
         </p>
       </div>
 
-      <SearchBar query={query} setQuery={setQuery} isMobile={isMobile} />
+      <SearchBar
+        query={query}
+        setQuery={setQuery}
+        onSubmitSearch={handleSearchSubmit}
+        isMobile={isMobile}
+      />
       <IndustryFilter
         selected={industry}
         setSelected={setIndustry}
         isMobile={isMobile}
       />
-      <DemandCurve selectedSkill={selectedSkill} isMobile={isMobile} />
-      <RankedSkills
-        query={query}
-        selectedSkill={selectedSkill}
-        setSelectedSkill={setSelectedSkill}
-        isMobile={isMobile}
-      />
-      <InsightBox isMobile={isMobile} />
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={140} />
+        </div>
+      ) : (
+        skillData.length > 0 && (
+          <DemandCurve
+            selectedSkill={activeSkill}
+            skillData={skillData}
+            isMobile={isMobile}
+          />
+        )
+      )}
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={300} />
+        </div>
+      ) : (
+        skillData.length > 0 && (
+          <RankedSkills
+            query={query}
+            selectedSkill={activeSkill}
+            highlightedSkill={highlightedSkill}
+            setSelectedSkill={handleSkillRowSelect}
+            skillData={skillData}
+            isMobile={isMobile}
+          />
+        )
+      )}
+
+      {loading ? (
+        <div style={{ margin: "20px 32px 0" }}>
+          <Skeleton height={280} />
+        </div>
+      ) : (
+        optimalData.length > 0 && (
+          <OptimalSkills optimalData={optimalData} isMobile={isMobile} />
+        )
+      )}
+
+      {!loading && skillData.length > 0 && optimalData.length > 0 && (
+        <InsightBox
+          skillData={skillData}
+          optimalData={optimalData}
+          isMobile={isMobile}
+        />
+      )}
+
       <div style={{ height: 16 }} />
     </div>
   );
