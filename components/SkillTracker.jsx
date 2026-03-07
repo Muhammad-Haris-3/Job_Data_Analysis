@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "./ThemeContext";
 import {
   AreaChart,
   Area,
@@ -18,37 +19,43 @@ const SKILLS = [
     name: "Python",
     pct: 84,
     badge: "HIGH_GROWTH",
-    badgeColor: "#00e5ff",
+    badgeColorKey: "CYAN",
   },
-  { rank: "02", name: "SQL", pct: 72, badge: "STABLE", badgeColor: "#4a6080" },
+  { rank: "02", name: "SQL", pct: 72, badge: "STABLE", badgeColorKey: "MUTED" },
   {
     rank: "03",
     name: "PyTorch",
     pct: 68,
     badge: "EXPLODING",
-    badgeColor: "#ff6b6b",
+    badgeColorKey: "ACCENT_RED",
   },
-  { rank: "04", name: "AWS", pct: 64, badge: "RISING", badgeColor: "#00e676" },
+  {
+    rank: "04",
+    name: "AWS",
+    pct: 64,
+    badge: "RISING",
+    badgeColorKey: "ACCENT_GREEN",
+  },
   {
     rank: "05",
     name: "Docker",
     pct: 59,
     badge: "STABLE",
-    badgeColor: "#4a6080",
+    badgeColorKey: "MUTED",
   },
   {
     rank: "06",
     name: "TensorFlow",
     pct: 55,
     badge: "RISING",
-    badgeColor: "#00e676",
+    badgeColorKey: "ACCENT_GREEN",
   },
   {
     rank: "07",
     name: "Spark",
     pct: 48,
     badge: "STABLE",
-    badgeColor: "#4a6080",
+    badgeColorKey: "MUTED",
   },
 ];
 
@@ -73,13 +80,6 @@ const BADGE_ICONS = {
   RISING: "↗",
 };
 
-// ── Palette ─────────────────────────────────────────────────
-const CARD = "#0e1623";
-const BORDER = "#1a2535";
-const CYAN = "#00e5ff";
-const MUTED = "#4a6080";
-const TEXT = "#e2eaf4";
-
 // ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
   const [hovered, setHovered] = useState(false);
@@ -92,11 +92,13 @@ function useHover() {
 
 // ── Custom Tooltip ───────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
+  const { theme } = useTheme();
+  const { BORDER, TEXT, MUTED, CYAN, TOOLTIP_BG } = theme;
   if (!active || !payload?.length) return null;
   return (
     <div
       style={{
-        background: "#111d2e",
+        background: TOOLTIP_BG,
         border: `1px solid ${BORDER}`,
         borderRadius: 8,
         padding: "8px 12px",
@@ -114,6 +116,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // ── Search Bar ───────────────────────────────────────────────
 function SearchBar({ query, setQuery, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, TEXT, MUTED } = theme;
   const [focused, setFocused] = useState(false);
   return (
     <div
@@ -150,8 +154,8 @@ function SearchBar({ query, setQuery, isMobile }) {
           fontSize: isMobile ? 12 : 13,
           fontFamily: "'JetBrains Mono', monospace",
           outline: "none",
-          boxShadow: focused ? `0 0 12px ${CYAN}22` : "none",
-          transition: "all 0.2s ease",
+          boxShadow: focused ? `0 0 12px ${CYAN}0f` : "none",
+          transition: "border-color 0.25s ease, box-shadow 0.25s ease",
           boxSizing: "border-box",
         }}
       />
@@ -161,6 +165,8 @@ function SearchBar({ query, setQuery, isMobile }) {
 
 // ── Industry Filter ──────────────────────────────────────────
 function IndustryButton({ ind, selected, setSelected }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, MUTED, BORDER } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const isActive = selected === ind;
   return (
@@ -183,7 +189,8 @@ function IndustryButton({ ind, selected, setSelected }) {
             : "transparent",
         color: isActive ? CYAN : hovered ? TEXT : MUTED,
         cursor: "pointer",
-        transition: "all 0.15s ease",
+        transition:
+          "background 0.25s ease, border-color 0.25s ease, color 0.25s ease",
       }}
     >
       {ind}
@@ -215,6 +222,8 @@ function IndustryFilter({ selected, setSelected, isMobile }) {
 
 // ── Demand Curve ─────────────────────────────────────────────
 function DemandCurve({ selectedSkill, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN } = theme;
   const skill = SKILLS.find((s) => s.name === selectedSkill) || SKILLS[0];
   const chartData = DEMAND_CURVE.map((d) => ({
     ...d,
@@ -271,7 +280,7 @@ function DemandCurve({ selectedSkill, isMobile }) {
           >
             {skill.pct}%
           </div>
-          <div style={{ fontSize: 11, color: "#00e676", marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: ACCENT_GREEN, marginTop: 2 }}>
             +12.4% YoY
           </div>
         </div>
@@ -320,8 +329,11 @@ function DemandCurve({ selectedSkill, isMobile }) {
 
 // ── Skill Row ────────────────────────────────────────────────
 function SkillRow({ skill, isMobile, onClick, isSelected }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, MUTED, BORDER, SECONDARY_TEXT } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const active = hovered || isSelected;
+  const badgeColor = theme[skill.badgeColorKey];
   return (
     <div
       onClick={() => onClick(skill.name)}
@@ -340,7 +352,7 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
             ? `${CYAN}08`
             : "transparent",
         border: `1px solid ${isSelected ? CYAN + "44" : "transparent"}`,
-        transition: "all 0.15s ease",
+        transition: "background 0.25s ease, border-color 0.25s ease",
         marginBottom: 4,
       }}
     >
@@ -370,7 +382,7 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
             style={{
               fontSize: isMobile ? 13 : 14,
               fontWeight: 700,
-              color: active ? TEXT : "#b0bec5",
+              color: active ? TEXT : SECONDARY_TEXT,
               transition: "color 0.15s ease",
             }}
           >
@@ -402,9 +414,9 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
           flexShrink: 0,
           padding: "3px 8px",
           borderRadius: 6,
-          background: `${skill.badgeColor}18`,
-          border: `1px solid ${skill.badgeColor}44`,
-          color: skill.badgeColor,
+          background: `${badgeColor}18`,
+          border: `1px solid ${badgeColor}44`,
+          color: badgeColor,
           fontFamily: "monospace",
         }}
       >
@@ -416,6 +428,8 @@ function SkillRow({ skill, isMobile, onClick, isSelected }) {
 
 // ── Ranked Skills ────────────────────────────────────────────
 function RankedSkills({ query, selectedSkill, setSelectedSkill, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, TEXT, MUTED } = theme;
   const filtered = SKILLS.filter((s) =>
     s.name.toLowerCase().includes(query.toLowerCase()),
   );
@@ -479,11 +493,13 @@ function RankedSkills({ query, selectedSkill, setSelectedSkill, isMobile }) {
 
 // ── Insight Box ──────────────────────────────────────────────
 function InsightBox({ isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, SECONDARY_TEXT, ACCENT_GREEN, ACCENT_RED } = theme;
   return (
     <div
       style={{
         margin: isMobile ? "14px 14px 0" : "20px 32px 0",
-        background: `linear-gradient(135deg, ${CYAN}0f, #00e67608)`,
+        background: `linear-gradient(135deg, ${CYAN}0f, ${ACCENT_GREEN}08)`,
         border: `1px solid ${CYAN}33`,
         borderRadius: isMobile ? 12 : 14,
         padding: isMobile ? "14px" : "22px",
@@ -503,7 +519,7 @@ function InsightBox({ isMobile }) {
       <div
         style={{
           fontSize: isMobile ? 12 : 13,
-          color: "#b0bec5",
+          color: SECONDARY_TEXT,
           lineHeight: 1.6,
         }}
       >
@@ -511,10 +527,10 @@ function InsightBox({ isMobile }) {
         <span style={{ color: CYAN, fontWeight: 700 }}>+12.4% YoY</span> —
         highest among all tracked skills. PyTorch is the fastest-rising
         framework with{" "}
-        <span style={{ color: "#ff6b6b", fontWeight: 700 }}>3× growth</span>{" "}
+        <span style={{ color: ACCENT_RED, fontWeight: 700 }}>3× growth</span>{" "}
         since 2023. Cloud skills (AWS, GCP) now appear in{" "}
-        <span style={{ color: "#00e676", fontWeight: 700 }}>64%</span> of senior
-        DS postings.
+        <span style={{ color: ACCENT_GREEN, fontWeight: 700 }}>64%</span> of
+        senior DS postings.
       </div>
     </div>
   );
@@ -522,6 +538,8 @@ function InsightBox({ isMobile }) {
 
 // ── Main Export (content only, no layout wrapper) ────────────
 export default function SkillTracker({ isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, MUTED } = theme;
   const [query, setQuery] = useState("");
   const [industry, setIndustry] = useState("ALL_INDUSTRIES");
   const [selectedSkill, setSelectedSkill] = useState("Python");

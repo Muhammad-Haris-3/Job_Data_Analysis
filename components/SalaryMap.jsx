@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "./ThemeContext";
 import {
   BarChart,
   Bar,
@@ -21,7 +22,7 @@ const CITIES = [
     median: 192,
     max: 240,
     yoy: "+12%",
-    yoyColor: "#00e676",
+    yoyColorKey: "ACCENT_GREEN",
     currency: "$",
     flag: "🇺🇸",
   },
@@ -32,7 +33,7 @@ const CITIES = [
     median: 178,
     max: 215,
     yoy: "+8%",
-    yoyColor: "#00e676",
+    yoyColorKey: "ACCENT_GREEN",
     currency: "$",
     flag: "🇺🇸",
   },
@@ -43,7 +44,7 @@ const CITIES = [
     median: 95,
     max: 130,
     yoy: "+4%",
-    yoyColor: "#ffd54f",
+    yoyColorKey: "ACCENT_YELLOW",
     currency: "£",
     flag: "🇬🇧",
   },
@@ -54,7 +55,7 @@ const CITIES = [
     median: 62,
     max: 95,
     yoy: "+18%",
-    yoyColor: "#00e676",
+    yoyColorKey: "ACCENT_GREEN",
     currency: "$",
     flag: "🇮🇳",
   },
@@ -65,7 +66,7 @@ const CITIES = [
     median: 88,
     max: 120,
     yoy: "+6%",
-    yoyColor: "#00e676",
+    yoyColorKey: "ACCENT_GREEN",
     currency: "€",
     flag: "🇩🇪",
   },
@@ -76,7 +77,7 @@ const CITIES = [
     median: 112,
     max: 155,
     yoy: "+9%",
-    yoyColor: "#00e676",
+    yoyColorKey: "ACCENT_GREEN",
     currency: "$",
     flag: "🇨🇦",
   },
@@ -107,13 +108,6 @@ const COL_DATA = [
   { city: "TOR", salary: 112, col: 65, ratio: 1.7 },
 ];
 
-// ── Palette ─────────────────────────────────────────────────
-const CARD = "#0e1623";
-const BORDER = "#1a2535";
-const CYAN = "#00e5ff";
-const MUTED = "#4a6080";
-const TEXT = "#e2eaf4";
-
 // ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
   const [hovered, setHovered] = useState(false);
@@ -126,11 +120,13 @@ function useHover() {
 
 // ── Custom Tooltip ───────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
+  const { theme } = useTheme();
+  const { BORDER, TEXT, MUTED, TOOLTIP_BG } = theme;
   if (!active || !payload?.length) return null;
   return (
     <div
       style={{
-        background: "#111d2e",
+        background: TOOLTIP_BG,
         border: `1px solid ${BORDER}`,
         borderRadius: 8,
         padding: "8px 12px",
@@ -152,6 +148,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // ── Role Selector ────────────────────────────────────────────
 function RoleSelector({ role, setRole, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, TEXT, MUTED } = theme;
   return (
     <div style={{ margin: isMobile ? "14px 14px 0" : "20px 32px 0" }}>
       <select
@@ -175,7 +173,7 @@ function RoleSelector({ role, setRole, isMobile }) {
         }}
       >
         {ROLES.map((r) => (
-          <option key={r} value={r} style={{ background: "#0e1623" }}>
+          <option key={r} value={r} style={{ background: CARD }}>
             {r}
           </option>
         ))}
@@ -186,6 +184,8 @@ function RoleSelector({ role, setRole, isMobile }) {
 
 // ── Salary Bar Chart ─────────────────────────────────────────
 function SalaryChart({ isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN } = theme;
   return (
     <div
       style={{
@@ -230,9 +230,9 @@ function SalaryChart({ isMobile }) {
       </div>
       <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
         {[
-          ["Min", "#4a6080"],
+          ["Min", MUTED],
           ["Median", CYAN],
-          ["Max", "#00e676"],
+          ["Max", ACCENT_GREEN],
         ].map(([label, color]) => (
           <div
             key={label}
@@ -277,7 +277,7 @@ function SalaryChart({ isMobile }) {
           <Bar
             dataKey="min"
             name="Min"
-            fill="#4a6080"
+            fill={MUTED}
             radius={[3, 3, 0, 0]}
             barSize={isMobile ? 8 : 14}
           />
@@ -291,7 +291,7 @@ function SalaryChart({ isMobile }) {
           <Bar
             dataKey="max"
             name="Max"
-            fill="#00e676"
+            fill={ACCENT_GREEN}
             radius={[3, 3, 0, 0]}
             barSize={isMobile ? 8 : 14}
           />
@@ -303,8 +303,11 @@ function SalaryChart({ isMobile }) {
 
 // ── City Benchmark Card ──────────────────────────────────────
 function CityCard({ c, isMobile, isSelected, onClick }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, MUTED, TEXT, SECONDARY_TEXT } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const active = hovered || isSelected;
+  const yoyColor = theme[c.yoyColorKey];
   return (
     <div
       onClick={() => onClick(c.city)}
@@ -316,8 +319,9 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
         borderRadius: isMobile ? 10 : 12,
         padding: isMobile ? "12px" : "16px",
         cursor: "pointer",
-        transition: "all 0.2s ease",
-        boxShadow: isSelected ? `0 0 12px ${CYAN}18` : "none",
+        transition:
+          "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
+        boxShadow: isSelected ? `0 0 12px ${CYAN}0f` : "none",
       }}
     >
       <div
@@ -343,7 +347,7 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
             style={{
               fontSize: isMobile ? 18 : 22,
               fontWeight: 800,
-              color: active ? TEXT : "#b0bec5",
+              color: active ? TEXT : SECONDARY_TEXT,
             }}
           >
             {c.currency}
@@ -357,9 +361,9 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
             fontWeight: 700,
             padding: "3px 8px",
             borderRadius: 6,
-            background: `${c.yoyColor}18`,
-            border: `1px solid ${c.yoyColor}44`,
-            color: c.yoyColor,
+            background: `${yoyColor}18`,
+            border: `1px solid ${yoyColor}44`,
+            color: yoyColor,
           }}
         >
           {c.yoy} YoY
@@ -427,6 +431,8 @@ function CityCard({ c, isMobile, isSelected, onClick }) {
 
 // ── Benchmarks Grid ──────────────────────────────────────────
 function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
+  const { theme } = useTheme();
+  const { TEXT, MUTED, ACCENT_YELLOW } = theme;
   return (
     <div style={{ margin: isMobile ? "14px 14px 0" : "20px 32px 0" }}>
       <div
@@ -443,7 +449,7 @@ function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: "#ffd54f",
+              background: ACCENT_YELLOW,
             }}
           />
           <span
@@ -484,6 +490,17 @@ function Benchmarks({ selectedCity, setSelectedCity, isMobile }) {
 
 // ── Cost of Living vs Salary ─────────────────────────────────
 function CostOfLiving({ isMobile }) {
+  const { theme } = useTheme();
+  const {
+    CARD,
+    BORDER,
+    CYAN,
+    MUTED,
+    TEXT,
+    SECONDARY_TEXT,
+    ACCENT_PURPLE,
+    ACCENT_RED,
+  } = theme;
   const maxSalary = Math.max(...COL_DATA.map((d) => d.salary));
   const maxCol = Math.max(...COL_DATA.map((d) => d.col));
 
@@ -510,7 +527,7 @@ function CostOfLiving({ isMobile }) {
             width: 8,
             height: 8,
             borderRadius: "50%",
-            background: "#ce93d8",
+            background: ACCENT_PURPLE,
           }}
         />
         <span
@@ -597,7 +614,7 @@ function CostOfLiving({ isMobile }) {
                     width: `${(d.col / maxSalary) * 100}%`,
                     height: "100%",
                     borderRadius: 3,
-                    background: `linear-gradient(90deg, #ff6b6b88, #ff6b6b)`,
+                    background: `linear-gradient(90deg, ${ACCENT_RED}88, ${ACCENT_RED})`,
                   }}
                 />
               </div>
@@ -624,7 +641,7 @@ function CostOfLiving({ isMobile }) {
           border: `1px solid ${CYAN}22`,
           borderRadius: 8,
           fontSize: 11,
-          color: "#b0bec5",
+          color: SECONDARY_TEXT,
           lineHeight: 1.6,
         }}
       >
@@ -637,6 +654,8 @@ function CostOfLiving({ isMobile }) {
 
 // ── Main Export ──────────────────────────────────────────────
 export default function SalaryMap({ isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, MUTED, ACCENT_YELLOW } = theme;
   const [role, setRole] = useState("Senior Data Scientist");
   const [selectedCity, setSelectedCity] = useState("San Francisco, CA");
 
@@ -656,7 +675,7 @@ export default function SalaryMap({ isMobile }) {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: "#ffd54f",
+              background: ACCENT_YELLOW,
             }}
           />
           <span

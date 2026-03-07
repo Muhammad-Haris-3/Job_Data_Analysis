@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-
-// ── Palette ─────────────────────────────────────────────────
-const CARD = "#0e1623";
-const BORDER = "#1a2535";
-const CYAN = "#00e5ff";
-const MUTED = "#4a6080";
-const TEXT = "#e2eaf4";
-const GREEN = "#00e676";
-const RED = "#ff6b6b";
+import { useTheme } from "./ThemeContext";
 
 // ── Field mapping options ────────────────────────────────────
 const FIELD_OPTIONS = [
@@ -121,6 +113,8 @@ function useHover() {
 
 // ── Upload Zone ──────────────────────────────────────────────
 function UploadZone({ onFileLoaded, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, TEXT, MUTED } = theme;
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef(null);
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
@@ -179,7 +173,7 @@ function UploadZone({ onFileLoaded, isMobile }) {
         textAlign: "center",
         cursor: "pointer",
         background: dragging ? `${CYAN}0a` : hovered ? `${CYAN}05` : CARD,
-        transition: "all 0.2s ease",
+        transition: "background 0.25s ease, border-color 0.25s ease",
       }}
     >
       <input
@@ -235,6 +229,8 @@ function UploadZone({ onFileLoaded, isMobile }) {
 
 // ── File Info Bar ────────────────────────────────────────────
 function FileInfoBar({ file, onReset, isMobile }) {
+  const { theme } = useTheme();
+  const { GREEN, MUTED, RED } = theme;
   return (
     <div
       style={{
@@ -282,6 +278,8 @@ function FileInfoBar({ file, onReset, isMobile }) {
 
 // ── Schema Mapping Row ───────────────────────────────────────
 function MappingRow({ col, sample, mapping, onChange, isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, MUTED, BORDER, TEXT, CARD, SUBTLE_BG } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const isSkipped = mapping === "-- Skip this column --";
   return (
@@ -294,7 +292,7 @@ function MappingRow({ col, sample, mapping, onChange, isMobile }) {
         borderRadius: 10,
         padding: isMobile ? "12px" : "14px 16px",
         marginBottom: 8,
-        transition: "all 0.15s ease",
+        transition: "background 0.25s ease, border-color 0.25s ease",
       }}
     >
       <div
@@ -356,7 +354,7 @@ function MappingRow({ col, sample, mapping, onChange, isMobile }) {
                   style={{
                     fontSize: 10,
                     color: MUTED,
-                    background: "#0a1220",
+                    background: SUBTLE_BG,
                     border: `1px solid ${BORDER}`,
                     borderRadius: 4,
                     padding: "2px 6px",
@@ -391,7 +389,7 @@ function MappingRow({ col, sample, mapping, onChange, isMobile }) {
           onChange={(e) => onChange(col, e.target.value)}
           style={{
             flex: 1,
-            background: "#0a1220",
+            background: SUBTLE_BG,
             border: `1px solid ${isSkipped ? BORDER : CYAN + "55"}`,
             borderRadius: 8,
             padding: "7px 10px",
@@ -403,7 +401,7 @@ function MappingRow({ col, sample, mapping, onChange, isMobile }) {
           }}
         >
           {FIELD_OPTIONS.map((opt) => (
-            <option key={opt} value={opt} style={{ background: "#0e1623" }}>
+            <option key={opt} value={opt} style={{ background: CARD }}>
               {opt}
             </option>
           ))}
@@ -415,6 +413,8 @@ function MappingRow({ col, sample, mapping, onChange, isMobile }) {
 
 // ── Schema Mapping Panel ─────────────────────────────────────
 function SchemaMapping({ file, mappings, setMappings, isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, RED } = theme;
   const mappedCount = Object.values(mappings).filter(
     (v) => v !== "-- Skip this column --",
   ).length;
@@ -482,6 +482,8 @@ function SchemaMapping({ file, mappings, setMappings, isMobile }) {
 
 // ── Analyze Button ───────────────────────────────────────────
 function AnalyzeButton({ mappings, isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, BORDER, MUTED } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   const mappedCount = Object.values(mappings).filter(
     (v) => v !== "-- Skip this column --",
@@ -506,7 +508,7 @@ function AnalyzeButton({ mappings, isMobile }) {
           fontFamily: "'JetBrains Mono', monospace",
           letterSpacing: 1,
           cursor: ready ? "pointer" : "not-allowed",
-          transition: "all 0.2s ease",
+          transition: "background 0.25s ease, box-shadow 0.25s ease",
           boxShadow: ready && hovered ? `0 0 24px ${CYAN}66` : "none",
         }}
       >
@@ -532,6 +534,8 @@ function AnalyzeButton({ mappings, isMobile }) {
 
 // ── Main Export ──────────────────────────────────────────────
 export default function AnalyzeData({ isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, MUTED, TEXT } = theme;
   const [fileData, setFileData] = useState(null);
   const [mappings, setMappings] = useState({});
 

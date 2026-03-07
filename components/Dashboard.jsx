@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTheme, ThemeProvider } from "./ThemeContext";
 import SkillTracker from "./SkillTracker";
 import SalaryMap from "./SalaryMap";
 import AnalyzeData from "./AnalyzeData";
@@ -18,10 +19,25 @@ import {
 
 // ── Dummy Data ──────────────────────────────────────────────
 const SUMMARY = [
-  { label: "TOTAL POSTINGS", value: "24.5k", change: "+12%", color: "#00e5ff" },
-  { label: "AVG SALARY", value: "$142k", change: "+5%", color: "#00e676" },
-  { label: "COMPANIES", value: "1.2k", change: "+2%", color: "#ce93d8" },
-  { label: "GROWTH", value: "8.4%", change: "+1.5%", color: "#ffd54f" },
+  { label: "TOTAL POSTINGS", value: "24.5k", change: "+12%", colorKey: "CYAN" },
+  {
+    label: "AVG SALARY",
+    value: "$142k",
+    change: "+5%",
+    colorKey: "ACCENT_GREEN",
+  },
+  {
+    label: "COMPANIES",
+    value: "1.2k",
+    change: "+2%",
+    colorKey: "ACCENT_PURPLE",
+  },
+  {
+    label: "GROWTH",
+    value: "8.4%",
+    change: "+1.5%",
+    colorKey: "ACCENT_YELLOW",
+  },
 ];
 
 const TOP_ROLES = [
@@ -49,14 +65,6 @@ const TOP_SKILLS = [
   { name: "Docker", value: 51 },
 ];
 
-// ── Palette ─────────────────────────────────────────────────
-const BG = "#0a0f1a";
-const CARD = "#0e1623";
-const BORDER = "#1a2535";
-const CYAN = "#00e5ff";
-const MUTED = "#4a6080";
-const TEXT = "#e2eaf4";
-
 const pct = (v) => `${v}%`;
 
 // ── Hover Hook ───────────────────────────────────────────────
@@ -71,11 +79,13 @@ function useHover() {
 
 // ── Custom Tooltip ───────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
+  const { theme } = useTheme();
+  const { BORDER, TEXT, MUTED, TOOLTIP_BG } = theme;
   if (!active || !payload?.length) return null;
   return (
     <div
       style={{
-        background: "#111d2e",
+        background: TOOLTIP_BG,
         border: `1px solid ${BORDER}`,
         borderRadius: 8,
         padding: "8px 12px",
@@ -95,19 +105,23 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // ── Summary Card (individual with hover) ────────────────────
 function SummaryCard({ s, isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, MUTED, TEXT, CARD_HOVER } = theme;
+  const color = theme[s.colorKey];
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   return (
     <div
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       style={{
-        background: hovered ? "#111e30" : CARD,
-        border: `1px solid ${hovered ? s.color + "66" : BORDER}`,
+        background: hovered ? CARD_HOVER : CARD,
+        border: `1px solid ${hovered ? color + "66" : BORDER}`,
         borderRadius: isMobile ? 12 : 14,
         padding: isMobile ? "12px 14px" : "20px 22px",
         cursor: "default",
-        transition: "all 0.2s ease",
-        boxShadow: hovered ? `0 0 16px ${s.color}22` : "none",
+        transition:
+          "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
+        boxShadow: hovered ? `0 0 16px ${color}0f` : "none",
       }}
     >
       <div
@@ -134,7 +148,7 @@ function SummaryCard({ s, isMobile }) {
         <span
           style={{
             fontSize: isMobile ? 11 : 13,
-            color: s.color,
+            color: color,
             fontWeight: 600,
           }}
         >
@@ -146,7 +160,7 @@ function SummaryCard({ s, isMobile }) {
           marginTop: 8,
           height: 3,
           borderRadius: 2,
-          background: `linear-gradient(90deg, ${s.color}55, ${s.color})`,
+          background: `linear-gradient(90deg, ${color}55, ${color})`,
           transform: hovered ? "scaleX(1.03)" : "scaleX(1)",
           transition: "transform 0.2s ease",
           transformOrigin: "left",
@@ -176,6 +190,8 @@ function SummaryCards({ isMobile }) {
 
 // ── Top Roles ────────────────────────────────────────────────
 function RoleRow({ r, isMobile }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, BORDER, SECONDARY_TEXT } = theme;
   const { hovered, onMouseEnter, onMouseLeave } = useHover();
   return (
     <div
@@ -200,7 +216,7 @@ function RoleRow({ r, isMobile }) {
         <span
           style={{
             fontSize: isMobile ? 13 : 14,
-            color: hovered ? TEXT : "#b0bec5",
+            color: hovered ? TEXT : SECONDARY_TEXT,
           }}
         >
           {r.title}
@@ -228,6 +244,8 @@ function RoleRow({ r, isMobile }) {
 }
 
 function TopRoles({ isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, TEXT } = theme;
   return (
     <div
       style={{
@@ -277,6 +295,18 @@ function TopRoles({ isMobile }) {
 
 // ── Salary Trends ────────────────────────────────────────────
 function SalaryTrends({ range, setRange, isMobile }) {
+  const { theme } = useTheme();
+  const {
+    CARD,
+    BORDER,
+    CYAN,
+    MUTED,
+    TEXT,
+    SUBTLE_BG,
+    CARD_HOVER,
+    ACCENT_GREEN,
+    ACCENT_YELLOW,
+  } = theme;
   return (
     <div
       style={{
@@ -301,7 +331,7 @@ function SalaryTrends({ range, setRange, isMobile }) {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: "#00e676",
+              background: ACCENT_GREEN,
             }}
           />
           <span
@@ -338,7 +368,8 @@ function SalaryTrends({ range, setRange, isMobile }) {
                         : "transparent",
                   color: range === r ? CYAN : hovered ? CYAN + "cc" : MUTED,
                   cursor: "pointer",
-                  transition: "all 0.15s ease",
+                  transition:
+                    "background 0.25s ease, border-color 0.25s ease, color 0.25s ease",
                 }}
               >
                 {r}
@@ -359,8 +390,8 @@ function SalaryTrends({ range, setRange, isMobile }) {
               <stop offset="95%" stopColor={CYAN} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00e676" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#00e676" stopOpacity={0} />
+              <stop offset="5%" stopColor={ACCENT_GREEN} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={ACCENT_GREEN} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -393,7 +424,7 @@ function SalaryTrends({ range, setRange, isMobile }) {
             type="monotone"
             dataKey="max"
             name="Max"
-            stroke="#00e676"
+            stroke={ACCENT_GREEN}
             strokeWidth={2}
             strokeDasharray="4 3"
             fill="url(#greenGrad)"
@@ -412,7 +443,7 @@ function SalaryTrends({ range, setRange, isMobile }) {
       >
         {[
           ["MAX OFFER", "$210k", CYAN],
-          ["MIN OFFER", "$85k", "#ffd54f"],
+          ["MIN OFFER", "$85k", ACCENT_YELLOW],
         ].map(([lbl, val, clr]) => {
           const { hovered, onMouseEnter, onMouseLeave } = useHover();
           return (
@@ -421,12 +452,12 @@ function SalaryTrends({ range, setRange, isMobile }) {
               onMouseEnter={onMouseEnter}
               onMouseLeave={onMouseLeave}
               style={{
-                background: hovered ? "#0f1a2e" : "#0a1220",
+                background: hovered ? CARD_HOVER : SUBTLE_BG,
                 borderRadius: 8,
                 padding: isMobile ? "8px 10px" : "12px 16px",
                 textAlign: "center",
                 border: `1px solid ${hovered ? clr + "55" : BORDER}`,
-                transition: "all 0.2s ease",
+                transition: "background 0.25s ease, border-color 0.25s ease",
                 cursor: "default",
               }}
             >
@@ -459,6 +490,8 @@ function SalaryTrends({ range, setRange, isMobile }) {
 
 // ── Skills Bar ───────────────────────────────────────────────
 function SkillsBar({ isMobile }) {
+  const { theme } = useTheme();
+  const { CARD, BORDER, CYAN, MUTED, TEXT, TOOLTIP_BG, ACCENT_PURPLE } = theme;
   return (
     <div
       style={{
@@ -482,7 +515,7 @@ function SkillsBar({ isMobile }) {
             width: 8,
             height: 8,
             borderRadius: "50%",
-            background: "#ce93d8",
+            background: ACCENT_PURPLE,
           }}
         />
         <span
@@ -520,7 +553,7 @@ function SkillsBar({ isMobile }) {
           <Tooltip
             cursor={{ fill: `${CYAN}11` }}
             contentStyle={{
-              background: "#111d2e",
+              background: TOOLTIP_BG,
               border: `1px solid ${BORDER}`,
               borderRadius: 8,
               fontSize: 11,
@@ -541,6 +574,8 @@ function SkillsBar({ isMobile }) {
 
 // ── Bottom Nav (mobile) ──────────────────────────────────────
 function BottomNav({ active, setActive }) {
+  const { theme } = useTheme();
+  const { BORDER, CARD, CYAN, TEXT, MUTED } = theme;
   const items = [
     { id: "DASH", icon: "⊞", label: "DASH" },
     { id: "MARKET", icon: "📈", label: "MARKET" },
@@ -606,74 +641,56 @@ function BottomNav({ active, setActive }) {
   );
 }
 
-// ── Sidebar Nav (desktop) ────────────────────────────────────
-function SidebarNav({ active, setActive }) {
-  const items = [
+// ── Nav Button (for top header) ──────────────────────────────
+function NavButton({ item, isActive, onClick }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, MUTED } = theme;
+  const { hovered, onMouseEnter, onMouseLeave } = useHover();
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        background: isActive ? `${CYAN}15` : hovered ? `${CYAN}08` : "none",
+        border: "none",
+        borderBottom: `2px solid ${isActive ? CYAN : "transparent"}`,
+        cursor: "pointer",
+        padding: "6px 14px",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        borderRadius: "6px 6px 0 0",
+        transition: "background 0.25s ease, border-color 0.25s ease",
+      }}
+    >
+      <span style={{ fontSize: 14 }}>{item.icon}</span>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          color: isActive ? CYAN : hovered ? TEXT : MUTED,
+          transition: "color 0.15s ease",
+        }}
+      >
+        {item.label}
+      </span>
+    </button>
+  );
+}
+
+// ── Header ───────────────────────────────────────────────────
+function Header({ time, isMobile, active, setActive }) {
+  const { dark, setDark, theme } = useTheme();
+  const { CYAN, TEXT, BORDER, MUTED } = theme;
+  const { hovered, onMouseEnter, onMouseLeave } = useHover();
+  const navItems = [
     { id: "DASH", icon: "⊞", label: "Dashboard" },
     { id: "MARKET", icon: "📈", label: "Market" },
     { id: "JOBS", icon: "💼", label: "Jobs" },
     { id: "SETTINGS", icon: "⚙️", label: "Settings" },
   ];
-  return (
-    <div
-      style={{
-        width: 200,
-        background: CARD,
-        borderRight: `1px solid ${BORDER}`,
-        display: "flex",
-        flexDirection: "column",
-        padding: "24px 0",
-        gap: 4,
-        flexShrink: 0,
-      }}
-    >
-      {items.map((it) => {
-        const { hovered, onMouseEnter, onMouseLeave } = useHover();
-        const isActive = active === it.id;
-        return (
-          <button
-            key={it.id}
-            onClick={() => setActive(it.id)}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            style={{
-              background: isActive
-                ? `${CYAN}15`
-                : hovered
-                  ? `${CYAN}08`
-                  : "none",
-              border: "none",
-              borderLeft: `3px solid ${isActive ? CYAN : hovered ? CYAN + "55" : "transparent"}`,
-              cursor: "pointer",
-              padding: "12px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              transition: "all 0.15s ease",
-            }}
-          >
-            <span style={{ fontSize: 18 }}>{it.icon}</span>
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: 0.5,
-                color: isActive ? CYAN : hovered ? TEXT : MUTED,
-                transition: "color 0.15s ease",
-              }}
-            >
-              {it.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Header ───────────────────────────────────────────────────
-function Header({ time, dark, setDark, isMobile }) {
-  const { hovered, onMouseEnter, onMouseLeave } = useHover();
   return (
     <div
       style={{
@@ -708,6 +725,28 @@ function Header({ time, dark, setDark, isMobile }) {
         >
           JOBMARKET<span style={{ color: TEXT }}>.AI</span>
         </span>
+        {!isMobile && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              marginLeft: 6,
+            }}
+          >
+            {navItems.map((it) => {
+              const isActive = active === it.id;
+              return (
+                <NavButton
+                  key={it.id}
+                  item={it}
+                  isActive={isActive}
+                  onClick={() => setActive(it.id)}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ textAlign: "right" }}>
@@ -745,7 +784,7 @@ function Header({ time, dark, setDark, isMobile }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "all 0.2s ease",
+            transition: "background 0.25s ease, border-color 0.25s ease",
           }}
         >
           {dark ? "🌙" : "☀️"}
@@ -785,8 +824,17 @@ function PageContent({ active, isMobile, range, setRange }) {
 
 // ── Main ─────────────────────────────────────────────────────
 export default function Dashboard() {
+  return (
+    <ThemeProvider>
+      <DashboardInner />
+    </ThemeProvider>
+  );
+}
+
+function DashboardInner() {
+  const { theme } = useTheme();
+  const { BG } = theme;
   const [time, setTime] = useState("");
-  const [dark, setDark] = useState(true);
   const [range, setRange] = useState("1M");
   const [active, setActive] = useState("DASH");
   const [isMobile, setIsMobile] = useState(false);
@@ -828,8 +876,18 @@ export default function Dashboard() {
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
         }}
       >
-        <Header time={time} dark={dark} setDark={setDark} isMobile={true} />
-        {content}
+        <Header
+          time={time}
+          isMobile={true}
+          active={active}
+          setActive={setActive}
+        />
+        <PageContent
+          active={active}
+          isMobile={true}
+          range={range}
+          setRange={setRange}
+        />
         <BottomNav active={active} setActive={setActive} />
       </div>
     );
@@ -847,16 +905,18 @@ export default function Dashboard() {
         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
       }}
     >
-      <Header time={time} dark={dark} setDark={setDark} isMobile={false} />
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <SidebarNav active={active} setActive={setActive} />
-        <PageContent
-          active={active}
-          isMobile={isMobile}
-          range={range}
-          setRange={setRange}
-        />
-      </div>
+      <Header
+        time={time}
+        isMobile={false}
+        active={active}
+        setActive={setActive}
+      />
+      <PageContent
+        active={active}
+        isMobile={isMobile}
+        range={range}
+        setRange={setRange}
+      />
     </div>
   );
 }
