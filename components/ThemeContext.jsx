@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const darkPalette = {
   BG: "#0a0f1a",
@@ -49,6 +49,12 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(true);
   const theme = dark ? darkPalette : lightPalette;
+
+  useEffect(() => {
+    const mode = dark ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", mode);
+    document.documentElement.style.colorScheme = mode;
+  }, [dark]);
 
   return (
     <ThemeContext.Provider value={{ dark, setDark, theme }}>
