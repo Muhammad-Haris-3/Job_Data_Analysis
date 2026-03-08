@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSwipeable } from "react-swipeable";
 import { useTheme, ThemeProvider } from "./ThemeContext";
 import SkillTracker from "./SkillTracker";
 import SalaryMap from "./SalaryMap";
@@ -18,6 +19,13 @@ import {
 } from "recharts";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+const TAB_ITEMS = [
+  { id: "DASH", icon: "⊞", label: "Dash" },
+  { id: "MARKET", icon: "📈", label: "Market" },
+  { id: "JOBS", icon: "💼", label: "Jobs" },
+  { id: "SETTINGS", icon: "⚙️", label: "Data" },
+];
 
 // ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
@@ -176,17 +184,8 @@ function SummaryCard({ s, isMobile }) {
 // ── Summary Cards ────────────────────────────────────────────
 function SummaryCards({ data, loading, isMobile }) {
   const { theme } = useTheme();
-  const {
-    CARD,
-    BORDER,
-    MUTED,
-    TEXT,
-    CARD_HOVER,
-    CYAN,
-    ACCENT_GREEN,
-    ACCENT_PURPLE,
-    ACCENT_YELLOW,
-  } = theme;
+  const { CARD, BORDER, CYAN, ACCENT_GREEN, ACCENT_PURPLE, ACCENT_YELLOW } =
+    theme;
 
   const cards = data
     ? [
@@ -464,17 +463,8 @@ function StatBox({ label, val, clr, isMobile }) {
 // ── Salary Trends ────────────────────────────────────────────
 function SalaryTrends({ data, loading, range, setRange, isMobile }) {
   const { theme } = useTheme();
-  const {
-    CARD,
-    BORDER,
-    CYAN,
-    MUTED,
-    TEXT,
-    SUBTLE_BG,
-    CARD_HOVER,
-    ACCENT_GREEN,
-    ACCENT_YELLOW,
-  } = theme;
+  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN, ACCENT_YELLOW } =
+    theme;
 
   // Use real salary trends, filter by range
   const rawTrends = data?.salary_trends || [];
@@ -755,70 +745,79 @@ function SkillsBar({ data, loading, isMobile }) {
 }
 
 // ── Bottom Nav (mobile) ──────────────────────────────────────
+function MobileNavButton({ item, isActive, onClick }) {
+  const { theme } = useTheme();
+  const { CYAN, TEXT, MUTED } = theme;
+  const { hovered, onMouseEnter, onMouseLeave } = useHover();
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        transform: hovered ? "scale(1.12)" : "scale(1)",
+        transition: "transform 0.15s ease",
+      }}
+      aria-label={item.label}
+      aria-current={isActive ? "page" : undefined}
+    >
+      <span style={{ fontSize: 18 }}>{item.icon}</span>
+      <span
+        style={{
+          fontSize: 9,
+          letterSpacing: 1,
+          fontWeight: 700,
+          color: isActive ? CYAN : hovered ? TEXT : MUTED,
+          transition: "color 0.15s ease",
+        }}
+      >
+        {item.label.toUpperCase()}
+      </span>
+      {isActive && (
+        <div
+          style={{
+            width: 16,
+            height: 2,
+            borderRadius: 1,
+            background: CYAN,
+          }}
+        />
+      )}
+    </button>
+  );
+}
+
 function BottomNav({ active, setActive }) {
   const { theme } = useTheme();
-  const { BORDER, CARD, CYAN, TEXT, MUTED } = theme;
-  const items = [
-    { id: "DASH", icon: "⊞", label: "DASH" },
-    { id: "MARKET", icon: "📈", label: "MARKET" },
-    { id: "JOBS", icon: "💼", label: "JOBS" },
-    { id: "SETTINGS", icon: "⚙️", label: "DATA" },
-  ];
+  const { BORDER } = theme;
+
   return (
     <div
+      className="fixed bottom-0 left-0 w-full z-50 bg-[#0f172a]"
       style={{
         display: "flex",
         justifyContent: "space-around",
-        padding: "10px 0 14px",
+        alignItems: "center",
+        padding: "10px 0 calc(14px + env(safe-area-inset-bottom))",
         borderTop: `1px solid ${BORDER}`,
-        background: CARD,
       }}
     >
-      {items.map((it) => {
-        const { hovered, onMouseEnter, onMouseLeave } = useHover();
-        return (
-          <button
-            key={it.id}
-            onClick={() => setActive(it.id)}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 4,
-              transform: hovered ? "scale(1.15)" : "scale(1)",
-              transition: "transform 0.15s ease",
-            }}
-          >
-            <span style={{ fontSize: 18 }}>{it.icon}</span>
-            <span
-              style={{
-                fontSize: 9,
-                letterSpacing: 1,
-                fontWeight: 700,
-                color: active === it.id ? CYAN : hovered ? TEXT : MUTED,
-                transition: "color 0.15s ease",
-              }}
-            >
-              {it.label}
-            </span>
-            {active === it.id && (
-              <div
-                style={{
-                  width: 16,
-                  height: 2,
-                  borderRadius: 1,
-                  background: CYAN,
-                }}
-              />
-            )}
-          </button>
-        );
-      })}
+      {TAB_ITEMS.map((item) => (
+        <MobileNavButton
+          key={item.id}
+          item={item}
+          isActive={active === item.id}
+          onClick={() => setActive(item.id)}
+        />
+      ))}
     </div>
   );
 }
@@ -1011,6 +1010,7 @@ function Header({ time, isMobile, active, setActive, dataReady }) {
 // ── Page Content ─────────────────────────────────────────────
 function PageContent({
   active,
+  setActive,
   isMobile,
   range,
   setRange,
@@ -1018,23 +1018,45 @@ function PageContent({
   loading,
   error,
 }) {
+  const currentIndex = TAB_ITEMS.findIndex((tab) => tab.id === active);
+  const goToRelativeTab = (step) => {
+    if (currentIndex < 0) return;
+    const nextIndex = Math.max(
+      0,
+      Math.min(TAB_ITEMS.length - 1, currentIndex + step),
+    );
+    if (nextIndex !== currentIndex) {
+      setActive(TAB_ITEMS[nextIndex].id);
+    }
+  };
+
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => isMobile && goToRelativeTab(1),
+    onSwipedRight: () => isMobile && goToRelativeTab(-1),
+    trackMouse: false,
+    trackTouch: true,
+    delta: 40,
+    preventScrollOnSwipe: false,
+  });
+
+  let content;
+
   switch (active) {
     case "MARKET":
-      return <SkillTracker isMobile={isMobile} data={data} loading={loading} />;
+      content = (
+        <SkillTracker isMobile={isMobile} data={data} loading={loading} />
+      );
+      break;
     case "JOBS":
-      return <SalaryMap isMobile={isMobile} data={data} loading={loading} />;
+      content = <SalaryMap isMobile={isMobile} data={data} loading={loading} />;
+      break;
     case "SETTINGS":
-      return <AnalyzeData isMobile={isMobile} />;
+      content = <AnalyzeData isMobile={isMobile} />;
+      break;
     case "DASH":
     default:
-      return (
-        <div
-          style={{
-            overflowY: "auto",
-            flex: 1,
-            paddingBottom: isMobile ? 4 : 32,
-          }}
-        >
+      content = (
+        <>
           {error && <ErrorBanner message={error} />}
           <SummaryCards data={data} loading={loading} isMobile={isMobile} />
           <TopRoles data={data} loading={loading} isMobile={isMobile} />
@@ -1047,9 +1069,23 @@ function PageContent({
           />
           <SkillsBar data={data} loading={loading} isMobile={isMobile} />
           <div style={{ height: 8 }} />
-        </div>
+        </>
       );
+      break;
   }
+
+  return (
+    <div
+      {...swipeHandlers}
+      style={{
+        overflowY: "auto",
+        flex: 1,
+        paddingBottom: isMobile ? 88 : 32,
+      }}
+    >
+      {content}
+    </div>
+  );
 }
 
 // ── Main ─────────────────────────────────────────────────────
@@ -1139,6 +1175,7 @@ function DashboardInner() {
         />
         <PageContent
           active={active}
+          setActive={setActive}
           isMobile={true}
           range={range}
           setRange={setRange}
@@ -1162,6 +1199,7 @@ function DashboardInner() {
       />
       <PageContent
         active={active}
+        setActive={setActive}
         isMobile={false}
         range={range}
         setRange={setRange}

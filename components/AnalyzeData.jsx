@@ -332,7 +332,7 @@ function MappingRow({ col, sample, mapping, onChange, isMobile }) {
             fontFamily: "monospace",
           }}
         >
-          "{col}"
+          &quot;{col}&quot;
         </span>
       </div>
 

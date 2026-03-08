@@ -147,7 +147,7 @@ function RoleSelector({ role, setRole, roles, isMobile }) {
 // ── Salary By Title Chart ────────────────────────────────────
 function SalaryByTitleChart({ salaryData, isMobile }) {
   const { theme } = useTheme();
-  const { CARD, BORDER, CYAN, MUTED, TEXT, TOOLTIP_BG, ACCENT_GREEN } = theme;
+  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN } = theme;
 
   const chartData = salaryData.slice(0, 8).map((s) => ({
     name: s.title,
@@ -480,16 +480,8 @@ function Benchmarks({
 // ── Remote Breakdown ─────────────────────────────────────────
 function RemoteBreakdown({ remoteData, isMobile }) {
   const { theme } = useTheme();
-  const {
-    CARD,
-    BORDER,
-    CYAN,
-    MUTED,
-    TEXT,
-    SECONDARY_TEXT,
-    ACCENT_GREEN,
-    ACCENT_PURPLE,
-  } = theme;
+  const { CARD, BORDER, CYAN, MUTED, TEXT, ACCENT_GREEN, ACCENT_PURPLE } =
+    theme;
 
   if (!remoteData) return null;
 
@@ -715,7 +707,7 @@ function TopCountries({ countries, isMobile }) {
 // ── Main Export ──────────────────────────────────────────────
 export default function SalaryMap({ isMobile, data, loading }) {
   const { theme } = useTheme();
-  const { CYAN, TEXT, MUTED, ACCENT_YELLOW } = theme;
+  const { TEXT, MUTED, ACCENT_YELLOW } = theme;
 
   const salaryData = data?.salary_by_title || [];
   const remoteData = data?.remote_breakdown || null;

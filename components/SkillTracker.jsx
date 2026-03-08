@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeContext";
 import {
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   BarChart,
@@ -79,30 +76,6 @@ function Skeleton({ width = "100%", height = 32, style = {} }) {
     />
   );
 }
-
-// ── Custom Tooltip ───────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label }) => {
-  const { theme } = useTheme();
-  const { BORDER, TEXT, MUTED, CYAN, TOOLTIP_BG } = theme;
-  if (!active || !payload?.length) return null;
-  return (
-    <div
-      style={{
-        background: TOOLTIP_BG,
-        border: `1px solid ${BORDER}`,
-        borderRadius: 8,
-        padding: "8px 12px",
-        fontSize: 12,
-        color: TEXT,
-      }}
-    >
-      <div style={{ color: MUTED, marginBottom: 4 }}>{label}</div>
-      <div style={{ color: CYAN }}>
-        Demand: <strong>{payload[0].value}</strong>
-      </div>
-    </div>
-  );
-};
 
 // ── Search Bar ───────────────────────────────────────────────
 function SearchBar({ query, setQuery, onSubmitSearch, isMobile }) {
@@ -503,7 +476,7 @@ function RankedSkills({
             padding: "20px 0",
           }}
         >
-          No skills found for "{query}"
+          No skills found for &quot;{query}&quot;
         </div>
       ) : (
         filtered.map((skill, i) => (
