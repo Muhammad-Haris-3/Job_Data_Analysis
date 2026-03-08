@@ -801,8 +801,11 @@ function BottomNav({ active, setActive }) {
 
   return (
     <div
-      className="w-full shrink-0 bg-[#0f172a] border-t border-slate-800 z-50"
       style={{
+        width: "100%",
+        flexShrink: 0,
+        background: "#0f172a",
+        zIndex: 50,
         display: "flex",
         justifyContent: "space-around",
         alignItems: "center",
@@ -1167,8 +1170,17 @@ function DashboardInner() {
   if (isMobile) {
     return (
       <div
-        className="fixed inset-0 z-50 flex flex-col bg-[#0f172a] overflow-hidden"
         style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          zIndex: 50,
+          display: "flex",
+          flexDirection: "column",
+          background: "#0f172a",
+          overflow: "hidden",
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
           height: "100dvh",
         }}

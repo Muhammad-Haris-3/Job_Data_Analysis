@@ -555,9 +555,7 @@ export default function AnalyzeData({ isMobile }) {
   };
 
   return (
-    <div
-      style={{ overflowY: "auto", flex: 1, minHeight: 0, paddingBottom: 32 }}
-    >
+    <div style={{ paddingBottom: 32 }}>
       {/* Page Title */}
       <div style={{ padding: isMobile ? "14px 14px 0" : "24px 32px 0" }}>
         <div
