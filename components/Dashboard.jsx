@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSwipeable } from "react-swipeable";
-import { createPortal } from "react-dom";
 import { useTheme, ThemeProvider } from "./ThemeContext";
 import SkillTracker from "./SkillTracker";
 import SalaryMap from "./SalaryMap";
@@ -802,7 +801,7 @@ function BottomNav({ active, setActive }) {
 
   return (
     <div
-      className="fixed bottom-0 left-0 w-full z-[99] bg-[#0f172a]"
+      className="w-full shrink-0 bg-[#0f172a] border-t border-slate-800 z-50"
       style={{
         display: "flex",
         justifyContent: "space-around",
@@ -820,14 +819,6 @@ function BottomNav({ active, setActive }) {
         />
       ))}
     </div>
-  );
-}
-
-function BottomNavPortal({ active, setActive }) {
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <BottomNav active={active} setActive={setActive} />,
-    document.body,
   );
 }
 
@@ -1087,9 +1078,9 @@ function PageContent({
     <div
       {...swipeHandlers}
       style={{
-        overflowY: "auto",
-        flex: 1,
-        paddingBottom: isMobile ? 96 : 32,
+        overflowY: isMobile ? "visible" : "auto",
+        flex: isMobile ? "0 0 auto" : 1,
+        paddingBottom: isMobile ? 8 : 32,
       }}
     >
       {content}
@@ -1174,15 +1165,18 @@ function DashboardInner() {
 
   if (isMobile) {
     return (
-      <>
-        <div style={layout}>
-          <Header
-            time={time}
-            isMobile={true}
-            active={active}
-            setActive={setActive}
-            dataReady={!!data}
-          />
+      <div
+        className="flex flex-col h-[100dvh] w-full overflow-hidden bg-[#0f172a]"
+        style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}
+      >
+        <Header
+          time={time}
+          isMobile={true}
+          active={active}
+          setActive={setActive}
+          dataReady={!!data}
+        />
+        <div className="flex-1 overflow-y-auto">
           <PageContent
             active={active}
             setActive={setActive}
@@ -1194,8 +1188,8 @@ function DashboardInner() {
             error={error}
           />
         </div>
-        <BottomNavPortal active={active} setActive={setActive} />
-      </>
+        <BottomNav active={active} setActive={setActive} />
+      </div>
     );
   }
 
