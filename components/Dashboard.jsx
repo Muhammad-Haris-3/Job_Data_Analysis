@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSwipeable } from "react-swipeable";
+import { createPortal } from "react-dom";
 import { useTheme, ThemeProvider } from "./ThemeContext";
 import SkillTracker from "./SkillTracker";
 import SalaryMap from "./SalaryMap";
@@ -801,7 +802,7 @@ function BottomNav({ active, setActive }) {
 
   return (
     <div
-      className="fixed bottom-0 left-0 w-full z-50 bg-[#0f172a]"
+      className="fixed bottom-0 left-0 w-full z-[99] bg-[#0f172a]"
       style={{
         display: "flex",
         justifyContent: "space-around",
@@ -819,6 +820,14 @@ function BottomNav({ active, setActive }) {
         />
       ))}
     </div>
+  );
+}
+
+function BottomNavPortal({ active, setActive }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <BottomNav active={active} setActive={setActive} />,
+    document.body,
   );
 }
 
@@ -1080,7 +1089,7 @@ function PageContent({
       style={{
         overflowY: "auto",
         flex: 1,
-        paddingBottom: isMobile ? 88 : 32,
+        paddingBottom: isMobile ? 96 : 32,
       }}
     >
       {content}
@@ -1165,26 +1174,28 @@ function DashboardInner() {
 
   if (isMobile) {
     return (
-      <div style={layout}>
-        <Header
-          time={time}
-          isMobile={true}
-          active={active}
-          setActive={setActive}
-          dataReady={!!data}
-        />
-        <PageContent
-          active={active}
-          setActive={setActive}
-          isMobile={true}
-          range={range}
-          setRange={setRange}
-          data={data}
-          loading={loading}
-          error={error}
-        />
-        <BottomNav active={active} setActive={setActive} />
-      </div>
+      <>
+        <div style={layout}>
+          <Header
+            time={time}
+            isMobile={true}
+            active={active}
+            setActive={setActive}
+            dataReady={!!data}
+          />
+          <PageContent
+            active={active}
+            setActive={setActive}
+            isMobile={true}
+            range={range}
+            setRange={setRange}
+            data={data}
+            loading={loading}
+            error={error}
+          />
+        </div>
+        <BottomNavPortal active={active} setActive={setActive} />
+      </>
     );
   }
 
