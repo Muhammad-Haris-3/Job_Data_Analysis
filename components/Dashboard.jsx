@@ -797,14 +797,14 @@ function MobileNavButton({ item, isActive, onClick }) {
 
 function BottomNav({ active, setActive }) {
   const { theme } = useTheme();
-  const { BORDER } = theme;
+  const { BORDER, CARD } = theme;
 
   return (
     <div
       style={{
         width: "100%",
         flexShrink: 0,
-        background: "#0f172a",
+        background: CARD,
         zIndex: 50,
         display: "flex",
         justifyContent: "space-around",
@@ -1179,7 +1179,7 @@ function DashboardInner() {
           zIndex: 50,
           display: "flex",
           flexDirection: "column",
-          background: "#0f172a",
+          background: BG,
           overflow: "hidden",
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
           height: "100dvh",
