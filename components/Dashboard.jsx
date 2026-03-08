@@ -1168,7 +1168,10 @@ function DashboardInner() {
     return (
       <div
         className="fixed inset-0 z-50 flex flex-col bg-[#0f172a] overflow-hidden"
-        style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}
+        style={{
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          height: "100dvh",
+        }}
       >
         <Header
           time={time}
@@ -1177,16 +1180,26 @@ function DashboardInner() {
           setActive={setActive}
           dataReady={!!data}
         />
-        <PageContent
-          active={active}
-          setActive={setActive}
-          isMobile={true}
-          range={range}
-          setRange={setRange}
-          data={data}
-          loading={loading}
-          error={error}
-        />
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <PageContent
+            active={active}
+            setActive={setActive}
+            isMobile={true}
+            range={range}
+            setRange={setRange}
+            data={data}
+            loading={loading}
+            error={error}
+          />
+        </div>
         <BottomNav active={active} setActive={setActive} />
       </div>
     );
