@@ -1166,17 +1166,17 @@ function DashboardInner() {
   if (isMobile) {
     return (
       <div
-        className="flex flex-col h-[100dvh] w-full overflow-hidden bg-[#0f172a]"
+        className="fixed inset-0 z-50 flex flex-col bg-[#0f172a] overflow-hidden"
         style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}
       >
-        <Header
-          time={time}
-          isMobile={true}
-          active={active}
-          setActive={setActive}
-          dataReady={!!data}
-        />
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 w-full overflow-y-auto pb-4">
+          <Header
+            time={time}
+            isMobile={true}
+            active={active}
+            setActive={setActive}
+            dataReady={!!data}
+          />
           <PageContent
             active={active}
             setActive={setActive}
