@@ -1078,8 +1078,9 @@ function PageContent({
     <div
       {...swipeHandlers}
       style={{
-        overflowY: isMobile ? "visible" : "auto",
-        flex: isMobile ? "0 0 auto" : 1,
+        overflowY: "auto",
+        flex: 1,
+        minHeight: 0,
         paddingBottom: isMobile ? 8 : 32,
       }}
     >
@@ -1169,25 +1170,23 @@ function DashboardInner() {
         className="fixed inset-0 z-50 flex flex-col bg-[#0f172a] overflow-hidden"
         style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}
       >
-        <div className="flex-1 w-full overflow-y-auto pb-4">
-          <Header
-            time={time}
-            isMobile={true}
-            active={active}
-            setActive={setActive}
-            dataReady={!!data}
-          />
-          <PageContent
-            active={active}
-            setActive={setActive}
-            isMobile={true}
-            range={range}
-            setRange={setRange}
-            data={data}
-            loading={loading}
-            error={error}
-          />
-        </div>
+        <Header
+          time={time}
+          isMobile={true}
+          active={active}
+          setActive={setActive}
+          dataReady={!!data}
+        />
+        <PageContent
+          active={active}
+          setActive={setActive}
+          isMobile={true}
+          range={range}
+          setRange={setRange}
+          data={data}
+          loading={loading}
+          error={error}
+        />
         <BottomNav active={active} setActive={setActive} />
       </div>
     );

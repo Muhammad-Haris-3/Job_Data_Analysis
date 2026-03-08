@@ -234,13 +234,12 @@ function SalaryByTitleChart({ salaryData, isMobile }) {
           />
           <XAxis
             dataKey="name"
-            tick={{ fill: MUTED, fontSize: isMobile ? 9 : 11 }}
+            tick={{ fill: MUTED, fontSize: isMobile ? 8 : 11 }}
             tickFormatter={formatJobTitleTick}
             interval={0}
-            minTickGap={8}
-            angle={0}
-            textAnchor="middle"
-            height={isMobile ? 30 : 26}
+            angle={isMobile ? -35 : 0}
+            textAnchor={isMobile ? "end" : "middle"}
+            height={isMobile ? 50 : 26}
             axisLine={false}
             tickLine={false}
           />
