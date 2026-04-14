@@ -95,7 +95,7 @@ function Skeleton({ width = "100%", height = 32, style = {} }) {
 }
 
 // ── Error Banner ─────────────────────────────────────────────
-function ErrorBanner({ message }) {
+function ErrorBanner({ message, apiBase }) {
   const { theme } = useTheme();
   return (
     <div
@@ -110,7 +110,7 @@ function ErrorBanner({ message }) {
         fontFamily: "monospace",
       }}
     >
-      ⚠ API Error: {message} — make sure Flask is running on localhost:5000
+      ⚠ API Error: {message} — check backend at {apiBase}
     </div>
   );
 }
@@ -1060,7 +1060,7 @@ function PageContent({
     default:
       content = (
         <>
-          {error && <ErrorBanner message={error} />}
+          {error && <ErrorBanner message={error} apiBase={API} />}
           <SummaryCards data={data} loading={loading} isMobile={isMobile} />
           <TopRoles data={data} loading={loading} isMobile={isMobile} />
           <SalaryTrends
