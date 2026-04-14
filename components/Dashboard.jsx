@@ -18,8 +18,6 @@ import {
   Bar,
 } from "recharts";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
 const TAB_ITEMS = [
   { id: "DASH", icon: "⊞", label: "Dash" },
   { id: "MARKET", icon: "📈", label: "Market" },
@@ -27,7 +25,6 @@ const TAB_ITEMS = [
   { id: "SETTINGS", icon: "⚙️", label: "Data" },
 ];
 
-// ── Hover Hook ───────────────────────────────────────────────
 function useHover() {
   const [hovered, setHovered] = useState(false);
   return {
@@ -95,7 +92,7 @@ function Skeleton({ width = "100%", height = 32, style = {} }) {
 }
 
 // ── Error Banner ─────────────────────────────────────────────
-function ErrorBanner({ message, apiBase }) {
+function ErrorBanner({ message }) {
   const { theme } = useTheme();
   return (
     <div
@@ -110,7 +107,7 @@ function ErrorBanner({ message, apiBase }) {
         fontFamily: "monospace",
       }}
     >
-      ⚠ API Error: {message} — check backend at {apiBase}
+      ⚠ API Error: {message} — check backend connection and BACKEND_API_URL
     </div>
   );
 }
@@ -1060,7 +1057,7 @@ function PageContent({
     default:
       content = (
         <>
-          {error && <ErrorBanner message={error} apiBase={API} />}
+          {error && <ErrorBanner message={error} />}
           <SummaryCards data={data} loading={loading} isMobile={isMobile} />
           <TopRoles data={data} loading={loading} isMobile={isMobile} />
           <SalaryTrends
@@ -1120,7 +1117,7 @@ function DashboardInner() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(`${API}/api/all`);
+        const res = await fetch("/api/all");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         setData(json);
