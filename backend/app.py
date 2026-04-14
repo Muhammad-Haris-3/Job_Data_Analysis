@@ -138,7 +138,8 @@ def get_all():
 # Run
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 7860))
+    # Keep local default aligned with frontend fallback URL.
+    port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") != "production"
     print(f"Starting Flask on port {port} (debug={debug})")
     app.run(host="0.0.0.0", port=port, debug=debug)
