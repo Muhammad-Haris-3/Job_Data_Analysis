@@ -304,6 +304,53 @@ else:
 print(f"      Remote jobs: {remote_breakdown['remote_pct']}%")
 
 # ─────────────────────────────────────────────
+# 7. DETAILED JOB RECORDS (for advanced filtering UI)
+# ─────────────────────────────────────────────
+print("      Building detailed records for advanced filtering...")
+
+for col in [
+    "job_title_short",
+    "job_country",
+    "job_location",
+    "salary_year_avg",
+    "job_work_from_home",
+    "job_schedule_type",
+    "company_name",
+]:
+    if col not in df.columns:
+        df[col] = np.nan
+
+job_records_df = df[
+    [
+        "job_title_short",
+        "job_country",
+        "job_location",
+        "salary_year_avg",
+        "job_work_from_home",
+        "job_schedule_type",
+        "company_name",
+    ]
+].dropna(subset=["job_title_short"])
+
+job_records = []
+for _, row in job_records_df.iterrows():
+    salary = row["salary_year_avg"]
+    remote_raw = row["job_work_from_home"]
+    remote_bool = bool(remote_raw) if pd.notna(remote_raw) else False
+
+    job_records.append({
+        "job_title": str(row["job_title_short"]).strip(),
+        "country": str(row["job_country"]).strip() if pd.notna(row["job_country"]) else "Unknown",
+        "location": str(row["job_location"]).strip() if pd.notna(row["job_location"]) else "Unknown",
+        "avg_salary": int(float(salary)) if pd.notna(salary) else None,
+        "remote": remote_bool,
+        "job_schedule_type": str(row["job_schedule_type"]).strip() if pd.notna(row["job_schedule_type"]) else "Unknown",
+        "company": str(row["company_name"]).strip() if pd.notna(row["company_name"]) else "Unknown",
+    })
+
+print(f"      Detailed records: {len(job_records):,}")
+
+# ─────────────────────────────────────────────
 # SAVE ALL OUTPUT
 # ─────────────────────────────────────────────
 output = {
@@ -322,6 +369,7 @@ output = {
     "salary_trends": salary_trends_list,
     "remote_breakdown": remote_breakdown,
     "top_countries": top_countries,
+    "job_records": job_records,
 }
 
 output_path = "precomputed_data.json"

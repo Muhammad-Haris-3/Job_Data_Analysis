@@ -6,6 +6,7 @@ import { useTheme, ThemeProvider } from "./ThemeContext";
 import SkillTracker from "./SkillTracker";
 import SalaryMap from "./SalaryMap";
 import AnalyzeData from "./AnalyzeData";
+import AdvancedFiltering from "./AdvancedFiltering";
 import {
   AreaChart,
   Area,
@@ -1048,7 +1049,12 @@ function PageContent({
       );
       break;
     case "JOBS":
-      content = <SalaryMap isMobile={isMobile} data={data} loading={loading} />;
+      content = (
+        <>
+          <AdvancedFiltering isMobile={isMobile} />
+          <SalaryMap isMobile={isMobile} data={data} loading={loading} />
+        </>
+      );
       break;
     case "SETTINGS":
       content = <AnalyzeData isMobile={isMobile} />;

@@ -8,13 +8,17 @@ Endpoints:
   GET /api/skills        → top skills, skills by title, optimal skills
   GET /api/trends        → salary trends + skill trends over time
   GET /api/location      → remote breakdown + top countries
+    GET /api/filter        → advanced job filtering (title, country, salary, remote)
   GET /api/all           → everything in one call (used by dashboard)
 """
 
 import json
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+
+import pandas as pd
+from datasets import load_dataset
 
 app = Flask(__name__)
 
@@ -46,6 +50,86 @@ try:
 except FileNotFoundError as e:
     print(f"[ERROR] {e}")
     DATA = None
+
+# Cached detailed job records used by /api/filter
+FILTERABLE_JOBS = None
+
+
+def _normalize_bool(val):
+    if isinstance(val, bool):
+        return val
+    if val is None:
+        return False
+    if isinstance(val, (int, float)):
+        return val == 1
+    return str(val).strip().lower() in {"true", "1", "yes", "y"}
+
+
+def _job_record_from_row(row):
+    salary = row.get("salary_year_avg")
+    avg_salary = int(float(salary)) if pd.notna(salary) else None
+
+    return {
+        "job_title": str(row.get("job_title_short") or "").strip(),
+        "country": str(row.get("job_country") or "Unknown").strip() or "Unknown",
+        "location": str(row.get("job_location") or "Unknown").strip() or "Unknown",
+        "avg_salary": avg_salary,
+        "remote": _normalize_bool(row.get("job_work_from_home")),
+        "job_schedule_type": str(row.get("job_schedule_type") or "Unknown").strip() or "Unknown",
+        "company": str(row.get("company_name") or "Unknown").strip() or "Unknown",
+    }
+
+
+def _build_filterable_jobs_from_dataset():
+    """Fallback path when precomputed detailed records are unavailable."""
+    print("[INFO] Building filterable jobs from HuggingFace dataset...")
+    dataset = load_dataset("lukebarousse/data_jobs", split="train")
+    df = dataset.to_pandas()
+
+    required_cols = [
+        "job_title_short",
+        "job_country",
+        "job_location",
+        "salary_year_avg",
+        "job_work_from_home",
+        "job_schedule_type",
+        "company_name",
+    ]
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = None
+
+    df["salary_year_avg"] = pd.to_numeric(df["salary_year_avg"], errors="coerce")
+    df["salary_year_avg"] = df["salary_year_avg"].where(
+        (df["salary_year_avg"] >= 20000) & (df["salary_year_avg"] <= 600000)
+    )
+    df = df.dropna(subset=["job_title_short"])
+
+    records = [_job_record_from_row(row) for _, row in df.iterrows()]
+    print(f"[OK] Built {len(records):,} filterable records")
+    return records
+
+
+def get_filterable_jobs():
+    global FILTERABLE_JOBS
+    if FILTERABLE_JOBS is not None:
+        return FILTERABLE_JOBS
+
+    if DATA and isinstance(DATA, dict) and isinstance(DATA.get("job_records"), list):
+        FILTERABLE_JOBS = DATA["job_records"]
+        print(f"[OK] Loaded {len(FILTERABLE_JOBS):,} filterable records from precomputed data")
+        return FILTERABLE_JOBS
+
+    FILTERABLE_JOBS = _build_filterable_jobs_from_dataset()
+    return FILTERABLE_JOBS
+
+
+def _parse_positive_int(value, default_value):
+    try:
+        parsed = int(value)
+        return parsed if parsed >= 0 else default_value
+    except (TypeError, ValueError):
+        return default_value
 
 
 def data_required(fn):
@@ -79,6 +163,7 @@ def index():
             "/api/skills",
             "/api/trends",
             "/api/location",
+            "/api/filter",
             "/api/all",
         ]
     })
@@ -124,6 +209,66 @@ def get_location():
     return jsonify({
         "remote_breakdown": DATA["remote_breakdown"],
         "top_countries": DATA["top_countries"],
+    })
+
+
+@app.route("/api/filter", methods=["GET"])
+def get_filtered_jobs():
+    """Advanced filtering endpoint for detailed job-level results."""
+    title = (request.args.get("title") or "").strip().lower()
+    country = (request.args.get("country") or "").strip().lower()
+    min_salary = _parse_positive_int(request.args.get("min_salary"), 0)
+    max_salary = _parse_positive_int(request.args.get("max_salary"), 0)
+    remote_only = _normalize_bool(request.args.get("remote"))
+    limit = min(_parse_positive_int(request.args.get("limit"), 50), 200)
+    offset = _parse_positive_int(request.args.get("offset"), 0)
+
+    if max_salary and min_salary and max_salary < min_salary:
+        return jsonify({"error": "max_salary cannot be less than min_salary"}), 400
+
+    jobs = get_filterable_jobs()
+
+    def matches(job):
+        if title and title not in str(job.get("job_title", "")).lower():
+            return False
+        if country and country not in str(job.get("country", "")).lower():
+            return False
+
+        salary = job.get("avg_salary")
+        if min_salary:
+            if salary is None or salary < min_salary:
+                return False
+        if max_salary:
+            if salary is None or salary > max_salary:
+                return False
+        if remote_only and not _normalize_bool(job.get("remote")):
+            return False
+        return True
+
+    filtered = [job for job in jobs if matches(job)]
+    filtered.sort(
+        key=lambda j: (
+            j.get("avg_salary") is None,
+            -(j.get("avg_salary") or 0),
+            str(j.get("job_title") or ""),
+        )
+    )
+
+    page = filtered[offset: offset + limit]
+
+    return jsonify({
+        "filters": {
+            "title": request.args.get("title", ""),
+            "country": request.args.get("country", ""),
+            "min_salary": min_salary,
+            "max_salary": max_salary,
+            "remote": remote_only,
+            "limit": limit,
+            "offset": offset,
+        },
+        "total": len(filtered),
+        "returned": len(page),
+        "results": page,
     })
 
 

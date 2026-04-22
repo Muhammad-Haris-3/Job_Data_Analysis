@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Job Market Analysis Dashboard
 
-## Getting Started
+Interactive Next.js dashboard for analyzing job-market trends, skills demand, salary ranges, and location patterns using the `lukebarousse/data_jobs` dataset.
 
-First, run the development server:
+## Features
+
+- Real-time dashboard cards and market trend charts.
+- Skills and salary visualizations.
+- CSV analysis workspace.
+- Advanced Filtering (Jobs tab):
+  - Job Title filter
+  - Country filter
+  - Salary Range (Min/Max)
+  - Remote-only toggle
+  - Detailed result cards with salary, remote status, location, and schedule type
+
+## Frontend Stack
+
+- Next.js (App Router)
+- React
+- Recharts
+
+## Local Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the frontend:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Backend Connection
 
-## Learn More
+By default, frontend API routes proxy to:
 
-To learn more about Next.js, take a look at the following resources:
+```text
+http://127.0.0.1:5000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Override with environment variables:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `BACKEND_API_URL`
+- `NEXT_PUBLIC_API_URL`
 
-## Deploy on Vercel
+## API Routes (Frontend Proxy)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `GET /api/all` -> dashboard aggregate data
+- `GET /api/filter` -> advanced filtered job records
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Example:
+
+```text
+/api/filter?title=data%20analyst&country=united%20states&min_salary=60000&max_salary=180000&remote=true&limit=30
+```
+
+## Notes
+
+- If backend is unavailable, frontend routes attempt local file fallback using `backend/precomputed_data.json`.
+- For best advanced filtering results, regenerate backend precomputed data using the updated analyzer so `job_records` are included.
