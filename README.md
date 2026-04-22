@@ -40,20 +40,15 @@ npm run dev
 http://localhost:3000
 ```
 
-## Backend Connection
+## Database Connection
 
-By default, frontend API routes proxy to:
+This project is now a single full-stack Next.js app on Vercel.
 
-```text
-http://127.0.0.1:5000
-```
+Set this environment variable (locally and in Vercel):
 
-Override with environment variables:
+- `DATABASE_URL` (Neon PostgreSQL connection string)
 
-- `BACKEND_API_URL`
-- `NEXT_PUBLIC_API_URL`
-
-## API Routes (Frontend Proxy)
+## API Routes
 
 - `GET /api/all` -> dashboard aggregate data
 - `GET /api/filter` -> advanced filtered job records
@@ -66,5 +61,5 @@ Example:
 
 ## Notes
 
-- If backend is unavailable, frontend routes attempt local file fallback using `backend/precomputed_data.json`.
-- For best advanced filtering results, regenerate backend precomputed data using the updated analyzer so `job_records` are included.
+- `app/api/filter/route.ts` and `app/api/all/route.ts` query Neon directly using `pg`.
+- No Flask backend is required.

@@ -1,7 +1,0 @@
-flask
-flask-cors
-pandas
-numpy
-datasets
-psycopg2-binary
-python-dotenv

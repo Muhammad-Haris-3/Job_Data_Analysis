@@ -108,7 +108,7 @@ function ErrorBanner({ message }) {
         fontFamily: "monospace",
       }}
     >
-      ⚠ API Error: {message} — check backend connection and BACKEND_API_URL
+      ⚠ API Error: {message} — check DATABASE_URL and Neon connectivity
     </div>
   );
 }
