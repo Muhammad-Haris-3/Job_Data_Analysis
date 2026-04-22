@@ -10,15 +10,26 @@ const BACKEND_API_URL =
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const LOCAL_DATA_PATH = path.join(
-  process.cwd(),
-  "backend",
-  "precomputed_data.json",
-);
+const LOCAL_DATA_PATHS = [
+  path.join(process.cwd(), "precomputed_data.json"),
+  path.join(process.cwd(), "backend", "precomputed_data.json"),
+];
 
 async function getLocalData() {
-  const file = await readFile(LOCAL_DATA_PATH, "utf-8");
-  return JSON.parse(file);
+  let lastError: unknown = null;
+
+  for (const candidatePath of LOCAL_DATA_PATHS) {
+    try {
+      const file = await readFile(candidatePath, "utf-8");
+      return JSON.parse(file);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw new Error(
+    `Local fallback data not found in any path: ${LOCAL_DATA_PATHS.join(", ")}. Last error: ${String(lastError)}`,
+  );
 }
 
 export async function GET() {

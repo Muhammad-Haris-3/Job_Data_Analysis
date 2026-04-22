@@ -8,7 +8,7 @@ Endpoints:
   GET /api/skills        → top skills, skills by title, optimal skills
   GET /api/trends        → salary trends + skill trends over time
   GET /api/location      → remote breakdown + top countries
-    GET /api/filter        → advanced job filtering (title, country, salary, remote)
+    GET /api/filter        → advanced job filtering via PostgreSQL
   GET /api/all           → everything in one call (used by dashboard)
 """
 
@@ -16,9 +16,11 @@ import json
 import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from dotenv import load_dotenv
+from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 
-import pandas as pd
-from datasets import load_dataset
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -51,8 +53,9 @@ except FileNotFoundError as e:
     print(f"[ERROR] {e}")
     DATA = None
 
-# Cached detailed job records used by /api/filter
-FILTERABLE_JOBS = None
+# PostgreSQL (Neon) configuration for /api/filter
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DB_POOL = None
 
 
 def _normalize_bool(val):
@@ -65,63 +68,37 @@ def _normalize_bool(val):
     return str(val).strip().lower() in {"true", "1", "yes", "y"}
 
 
-def _job_record_from_row(row):
-    salary = row.get("salary_year_avg")
-    avg_salary = int(float(salary)) if pd.notna(salary) else None
+def get_db_pool():
+    """Create (once) and return a PostgreSQL connection pool."""
+    global DB_POOL
+    if DB_POOL is not None:
+        return DB_POOL
 
-    return {
-        "job_title": str(row.get("job_title_short") or "").strip(),
-        "country": str(row.get("job_country") or "Unknown").strip() or "Unknown",
-        "location": str(row.get("job_location") or "Unknown").strip() or "Unknown",
-        "avg_salary": avg_salary,
-        "remote": _normalize_bool(row.get("job_work_from_home")),
-        "job_schedule_type": str(row.get("job_schedule_type") or "Unknown").strip() or "Unknown",
-        "company": str(row.get("company_name") or "Unknown").strip() or "Unknown",
-    }
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not set")
 
+    connect_kwargs = {"dsn": DATABASE_URL}
+    if "sslmode=" not in DATABASE_URL:
+        # Neon typically requires SSL by default.
+        connect_kwargs["sslmode"] = "require"
 
-def _build_filterable_jobs_from_dataset():
-    """Fallback path when precomputed detailed records are unavailable."""
-    print("[INFO] Building filterable jobs from HuggingFace dataset...")
-    dataset = load_dataset("lukebarousse/data_jobs", split="train")
-    df = dataset.to_pandas()
-
-    required_cols = [
-        "job_title_short",
-        "job_country",
-        "job_location",
-        "salary_year_avg",
-        "job_work_from_home",
-        "job_schedule_type",
-        "company_name",
-    ]
-    for col in required_cols:
-        if col not in df.columns:
-            df[col] = None
-
-    df["salary_year_avg"] = pd.to_numeric(df["salary_year_avg"], errors="coerce")
-    df["salary_year_avg"] = df["salary_year_avg"].where(
-        (df["salary_year_avg"] >= 20000) & (df["salary_year_avg"] <= 600000)
-    )
-    df = df.dropna(subset=["job_title_short"])
-
-    records = [_job_record_from_row(row) for _, row in df.iterrows()]
-    print(f"[OK] Built {len(records):,} filterable records")
-    return records
+    DB_POOL = pool.SimpleConnectionPool(1, 10, **connect_kwargs)
+    return DB_POOL
 
 
-def get_filterable_jobs():
-    global FILTERABLE_JOBS
-    if FILTERABLE_JOBS is not None:
-        return FILTERABLE_JOBS
-
-    if DATA and isinstance(DATA, dict) and isinstance(DATA.get("job_records"), list):
-        FILTERABLE_JOBS = DATA["job_records"]
-        print(f"[OK] Loaded {len(FILTERABLE_JOBS):,} filterable records from precomputed data")
-        return FILTERABLE_JOBS
-
-    FILTERABLE_JOBS = _build_filterable_jobs_from_dataset()
-    return FILTERABLE_JOBS
+def run_db_query(query, params=None, fetch="all"):
+    db_pool = get_db_pool()
+    conn = db_pool.getconn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, params or [])
+            if fetch == "one":
+                return cur.fetchone()
+            if fetch == "all":
+                return cur.fetchall()
+            return None
+    finally:
+        db_pool.putconn(conn)
 
 
 def _parse_positive_int(value, default_value):
@@ -214,7 +191,7 @@ def get_location():
 
 @app.route("/api/filter", methods=["GET"])
 def get_filtered_jobs():
-    """Advanced filtering endpoint for detailed job-level results."""
+    """Advanced filtering endpoint backed by PostgreSQL."""
     title = (request.args.get("title") or "").strip().lower()
     country = (request.args.get("country") or "").strip().lower()
     min_salary = _parse_positive_int(request.args.get("min_salary"), 0)
@@ -226,35 +203,68 @@ def get_filtered_jobs():
     if max_salary and min_salary and max_salary < min_salary:
         return jsonify({"error": "max_salary cannot be less than min_salary"}), 400
 
-    jobs = get_filterable_jobs()
+    where_clauses = []
+    params = []
 
-    def matches(job):
-        if title and title not in str(job.get("job_title", "")).lower():
-            return False
-        if country and country not in str(job.get("country", "")).lower():
-            return False
+    if title:
+        where_clauses.append("LOWER(job_title) LIKE %s")
+        params.append(f"%{title}%")
 
-        salary = job.get("avg_salary")
-        if min_salary:
-            if salary is None or salary < min_salary:
-                return False
-        if max_salary:
-            if salary is None or salary > max_salary:
-                return False
-        if remote_only and not _normalize_bool(job.get("remote")):
-            return False
-        return True
+    if country:
+        where_clauses.append("LOWER(country) LIKE %s")
+        params.append(f"%{country}%")
 
-    filtered = [job for job in jobs if matches(job)]
-    filtered.sort(
-        key=lambda j: (
-            j.get("avg_salary") is None,
-            -(j.get("avg_salary") or 0),
-            str(j.get("job_title") or ""),
-        )
-    )
+    if min_salary:
+        where_clauses.append("avg_salary IS NOT NULL AND avg_salary >= %s")
+        params.append(min_salary)
 
-    page = filtered[offset: offset + limit]
+    if max_salary:
+        where_clauses.append("avg_salary IS NOT NULL AND avg_salary <= %s")
+        params.append(max_salary)
+
+    if remote_only:
+        where_clauses.append("remote = TRUE")
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+    count_sql = f"SELECT COUNT(*) AS total FROM job_records {where_sql}"
+    page_sql = f"""
+        SELECT
+            job_title,
+            country,
+            location,
+            avg_salary,
+            remote,
+            job_schedule_type,
+            company
+        FROM job_records
+        {where_sql}
+        ORDER BY (avg_salary IS NULL) ASC, avg_salary DESC, job_title ASC
+        LIMIT %s OFFSET %s
+    """
+
+    try:
+        total_row = run_db_query(count_sql, params, fetch="one")
+        page_rows = run_db_query(page_sql, [*params, limit, offset], fetch="all")
+    except Exception as db_error:
+        return jsonify({
+            "error": "Database query failed",
+            "details": str(db_error),
+        }), 500
+
+    results = []
+    for row in page_rows:
+        results.append({
+            "job_title": row.get("job_title"),
+            "country": row.get("country"),
+            "location": row.get("location"),
+            "avg_salary": row.get("avg_salary"),
+            "remote": _normalize_bool(row.get("remote")),
+            "job_schedule_type": row.get("job_schedule_type"),
+            "company": row.get("company"),
+        })
+
+    total = int(total_row.get("total", 0)) if total_row else 0
 
     return jsonify({
         "filters": {
@@ -266,9 +276,9 @@ def get_filtered_jobs():
             "limit": limit,
             "offset": offset,
         },
-        "total": len(filtered),
-        "returned": len(page),
-        "results": page,
+        "total": total,
+        "returned": len(results),
+        "results": results,
     })
 
 
