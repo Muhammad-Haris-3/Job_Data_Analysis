@@ -1096,20 +1096,22 @@ function PageContent({
 }
 
 // ── Main ─────────────────────────────────────────────────────
-export default function Dashboard() {
+export default function Dashboard({ initialTab = "DASH" }) {
   return (
     <ThemeProvider>
-      <DashboardInner />
+      <DashboardInner initialTab={initialTab} />
     </ThemeProvider>
   );
 }
 
-function DashboardInner() {
+function DashboardInner({ initialTab = "DASH" }) {
   const { theme } = useTheme();
   const { BG } = theme;
   const [time, setTime] = useState("");
   const [range, setRange] = useState("ALL");
-  const [active, setActive] = useState("DASH");
+  const [active, setActive] = useState(() =>
+    TAB_ITEMS.some((tab) => tab.id === initialTab) ? initialTab : "DASH",
+  );
   const [isMobile, setIsMobile] = useState(false);
 
   // ── Real data state ──
