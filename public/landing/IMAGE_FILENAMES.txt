@@ -1,0 +1,9 @@
+Place landing showcase screenshots in this folder using exactly these file names:
+
+- dashboard-salary-trends.png
+- dashboard-advanced-filtering.png
+- dashboard-salary-by-title.png
+- dashboard-salary-benchmarks.png
+- dashboard-top-countries.png
+
+Recommended: export each image as PNG, keep width between 1600px and 2200px for crisp desktop display.
